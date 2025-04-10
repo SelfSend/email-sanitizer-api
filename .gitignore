@@ -1,0 +1,11 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Env variables
+.env
+
+# Others
+.DS_Store
+.idea/
+.vscode/
