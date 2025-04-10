@@ -2,17 +2,13 @@
 
 A modern, scalable, and secure API built with future-ready technologies. Designed for high performance and ease of maintenance.
 
----
-
 ## 🚀 Features
 
-- **Scalable Architecture**: Built with {{Go/Node.js/Rust/Python}} and optimized for horizontal scaling.
+- **Scalable Architecture**: Built with and optimized for horizontal scaling.
 - **Real-Time Support**: Optional WebSocket/SSE endpoints for real-time communication.
 - **Security First**: OAuth2/JWT authentication, rate limiting, and input validation.
 - **Observability**: Integrated logging, metrics, and distributed tracing.
 - **Multi-Protocol Support**: REST, GraphQL, or gRPC endpoints (choose as needed).
-
----
 
 ## 🛠 Tech Stack
 
@@ -24,8 +20,6 @@ A modern, scalable, and secure API built with future-ready technologies. Designe
 | **Infra**      | AWS Lambda/Kubernetes + Terraform (IaC) |
 | **Auth**       | Auth0/Clerk/PASETO/OAuth2               |
 | **Monitoring** | Prometheus + Grafana, ELK Stack         |
-
----
 
 ## 📦 Getting Started
 
