@@ -1,6 +1,6 @@
 # email-sanitizer by SelfSend
 
-A modern, scalable, and secure API built with future-ready technologies. Designed for high performance and ease of maintenance.
+A high-performance and secure REST/GraphQL API built with Rust, PostgreSQL & Redis for cleaning email subscriber lists. Maintains sender reputation by validating, deduplicating, and pruning inactive emails.
 
 ## 🚀 Features
 
@@ -205,3 +205,7 @@ MIT License.
 - **Performance**: 99.9% uptime, <100ms latency.
 - **Accuracy**: 95%+ valid/invalid email detection.
 - **Security**: No critical CVEs, rate limits enforced.
+
+---
+
+![selfsend-github-bio](https://github.com/user-attachments/assets/dbbabdc1-7e2b-4faf-93f9-03e3aa21a912)
