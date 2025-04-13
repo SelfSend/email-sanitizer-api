@@ -125,7 +125,7 @@ fn is_valid_dot_atom(s: &str, is_domain: bool) -> bool {
 
     parts.iter().all(|part| {
         part.chars().all(|c| match c {
-            c if c == '-' => !is_domain || (!part.starts_with('-') && !part.ends_with('-')),
+            '-' => !is_domain || (!part.starts_with('-') && !part.ends_with('-')),
             c if is_domain => c.is_alphanumeric() || c == '-',
             _ => c.is_alphanumeric() || "!#$%&'*+/=?^_`{|}~".contains(c),
         })
@@ -144,7 +144,7 @@ fn is_valid_domain_literal(literal: &str) -> bool {
 /// Validates internationalized domain names per RFC 5890 and RFC 6531
 fn is_valid_domain_name(domain: &str) -> bool {
     let labels: Vec<&str> = domain.split('.').collect();
-    labels.len() >= 1
+    !labels.is_empty()
         && labels.iter().all(|label| {
             label.len() <= 63
                 && !label.starts_with('-')
