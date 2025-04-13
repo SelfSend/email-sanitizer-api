@@ -1,0 +1,7 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+cargo fmt --all -- --check
+cargo clippy -- -D warnings
+cargo test
+cargo build

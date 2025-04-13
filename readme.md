@@ -10,6 +10,42 @@ A high-performance and secure REST/GraphQL API built with Rust, PostgreSQL & Red
 - **Observability**: Integrated logging, metrics, and distributed tracing.
 - **Multi-Protocol Support**: REST, GraphQL, or gRPC endpoints (choose as needed).
 
+## ✅ Validations
+
+Detect and handle invalid email addresses before they take some space in your database, cause delivery issues or harm your sender score.
+
+The API can be used to validate email addresses in real-time or in bulk. It can also be used to clean up existing email lists by removing invalid or duplicate addresses.
+
+The API is designed to be fast and efficient, capable of processing thousands of email addresses per second. It can be integrated into existing applications or used as a standalone service.
+
+Currently including multiple edge-cases and validation checks:
+
+### Syntax Validation Checks
+
+| Validation Type               | Description                                                                |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| **Local-Part Characters**     | Allow letters, digits, specific symbols; quotes required for spaces.       |
+| **Quoted Local-Part**         | Balanced quotes and escaping; spaces allowed only within quotes.           |
+| **Local-Part Dots**           | Prohibit leading/trailing/consecutive dots unless quoted.                  |
+| **Domain Labels**             | Subdomains 1–63 chars; hyphens allowed only mid-label.                     |
+| **Domain IP Literals**        | Validate IPv4/IPv6 addresses in brackets (e.g., `[192.168.1.1]`).          |
+| **Domain Case Handling**      | Normalize domain to lowercase (case-insensitive).                          |
+| **Unicode Support**           | Allow UTF-8 characters in local-part and domain.                           |
+| **Unicode Normalization**     | Normalize Unicode to NFC form to avoid duplicates.                         |
+| **SMTPUTF8 Compliance**       | Support SMTPUTF8 extension for non-ASCII addresses.                        |
+| **Local-Part Length**         | ≤64 octets (after encoding).                                               |
+| **Total Address Length**      | ≤254 octets (including local-part, @, domain).                             |
+| **Address Comments**          | Reject or strip RFC 5322-style comments.                                   |
+| **Obsolete Syntax**           | Disallow deprecated syntax (e.g., folded whitespace).                      |
+| **Quoted Escapes**            | Validate backslash-escaped quotes (e.g., `"user\"name"`).                  |
+| **Punycode Conversion**       | Convert international domains to Punycode (e.g., `xn--fiqs8s.xn--55qx5d`). |
+| **IP Formatting**             | Validate IPv4/IPv6 syntax in domain literals.                              |
+| **Domain Literal Brackets**   | Reject IP literals missing brackets (e.g., `user@192.168.1.1`).            |
+| **Reserved Domains**          | Block reserved domains (e.g., `localhost`, `test`).                        |
+| **Null Addresses**            | Reject empty addresses (e.g., `<>`).                                       |
+| **Local-Part Case**           | Preserve case but flag inconsistencies (case-sensitive).                   |
+| **Domain Case Normalization** | Always convert domain to lowercase (case-insensitive).                     |
+
 ## 🛠 Tech Stack
 
 | Category       | Tools                                   |
@@ -33,7 +69,7 @@ A high-performance and secure REST/GraphQL API built with Rust, PostgreSQL & Red
 
 1. Clone the repo:
    ```bash
-   git clone https://github.com/self-send/email-sanitizer.git
+   git clone https://github.com/SelfSend/email-sanitizer.git
    ```
 2. Install Dependencies:
    ```bash
