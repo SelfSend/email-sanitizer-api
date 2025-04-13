@@ -458,7 +458,7 @@ checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
 name = "email-sanitizer"
-version = "0.1.0+sprint1"
+version = "0.2.0+sprint1"
 dependencies = [
  "actix-web",
  "chrono",
