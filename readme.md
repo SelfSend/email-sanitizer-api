@@ -4,7 +4,7 @@ A high-performance and secure REST/GraphQL API built with Rust, PostgreSQL & Red
 
 ## 🚀 Features
 
-- **Scalable Architecture**: Built with and optimized for horizontal scaling.
+- **Scalable Architecture**: Built with Rust and optimized for horizontal scaling.
 - **Real-Time Support**: Optional WebSocket/SSE endpoints for real-time communication.
 - **Security First**: OAuth2/JWT authentication, rate limiting, and input validation.
 - **Observability**: Integrated logging, metrics, and distributed tracing.
@@ -45,6 +45,10 @@ Currently including multiple edge-cases and validation checks:
 | **Null Addresses**            | Reject empty addresses (e.g., `<>`).                                       |
 | **Local-Part Case**           | Preserve case but flag inconsistencies (case-sensitive).                   |
 | **Domain Case Normalization** | Always convert domain to lowercase (case-insensitive).                     |
+
+### DNS/MX Records Validation Checks
+
+Follows RFC specifications by checking A/AAAA records if MX records are missing. Returns true if either MX records exist or direct IP records (A/AAAA) are present
 
 ## 🛠 Tech Stack
 
@@ -134,10 +138,10 @@ MIT License.
    - Add DNS/MX record verification.
    - **DoD**: Unit tests cover 90% of cases, returns structured validation results.
 
-3. **PostgreSQL Integration**
+3. **PostgreSQL Integration & Disposable emails validation**
 
-   - Design database schema for storing validation results.
-   - Implement basic CRUD operations.
+   - Design database schema for disposable email domains.
+   - Implement disposable email addreses validation.
    - **DoD**: DB migrations applied, test queries succeed.
 
 4. **REST API (Basic Endpoints)**
