@@ -1,5 +1,26 @@
 use std::net::{IpAddr, Ipv6Addr};
-
+/// Validates an email address according to RFC 5322 and RFC 6531 specifications.
+///
+/// This function performs syntax checking of both local-part and domain parts with:
+/// - Full quoted-string/local-part support
+/// - Domain literal (IP address) validation
+/// - Internationalized email (UTF-8) support
+/// - Length constraints enforcement
+///
+/// # Examples
+/// ```
+/// use email_validator::is_valid_email;
+///
+/// assert!(is_valid_email("user.name+tag@example.com"));
+/// assert!(is_valid_email("Pelé@exämple.中国"));
+/// assert!(!is_valid_email("invalid@ex_mple.com"));
+/// ```
+///
+/// # Arguments
+/// * `email` - A string slice containing the email address to validate
+///
+/// # Returns
+/// `true` if the email address meets all syntax requirements, `false` otherwise
 pub fn is_valid_email(email: &str) -> bool {
     // Check overall length constraint (RFC 5321 + 5322)
     if email.len() > 254 {
@@ -45,6 +66,9 @@ pub fn is_valid_email(email: &str) -> bool {
     is_valid_domain_part(domain_part)
 }
 
+/// Validates the local-part component of an email address
+///
+/// Supports both dot-atom (RFC 5322) and quoted-string (RFC 5322) formats
 fn is_valid_local_part(local: &str) -> bool {
     if local.starts_with('"') && local.ends_with('"') {
         // Quoted string (RFC 5322 Section 3.4.1)
@@ -55,6 +79,9 @@ fn is_valid_local_part(local: &str) -> bool {
     }
 }
 
+/// Validates the domain part component of an email address
+///
+/// Handles both domain names and domain literals (IP addresses)
 fn is_valid_domain_part(domain: &str) -> bool {
     if let Some(domain_literal) = domain.strip_prefix('[').and_then(|s| s.strip_suffix(']')) {
         // Domain literal (RFC 5322 Section 3.4.1)
@@ -65,7 +92,9 @@ fn is_valid_domain_part(domain: &str) -> bool {
     }
 }
 
-// Helper functions
+// Helper functions Below
+
+/// Validates quoted-string format from RFC 5322 section 3.4.1
 fn is_valid_quoted_string(quoted: &str) -> bool {
     let content = &quoted[1..quoted.len() - 1];
     let mut escape = false;
@@ -85,6 +114,9 @@ fn is_valid_quoted_string(quoted: &str) -> bool {
     !escape // Ensure no dangling escape
 }
 
+/// Validates dot-atom format from RFC 5322 section 3.4.1
+///
+/// * `is_domain` - Enforces stricter rules for domain validation
 fn is_valid_dot_atom(s: &str, is_domain: bool) -> bool {
     let parts: Vec<&str> = s.split('.').collect();
     if parts.is_empty() || parts.iter().any(|&p| p.is_empty()) {
@@ -100,6 +132,7 @@ fn is_valid_dot_atom(s: &str, is_domain: bool) -> bool {
     })
 }
 
+/// Validates domain literals (IP addresses) from RFC 5322 section 3.4.1
 fn is_valid_domain_literal(literal: &str) -> bool {
     literal.parse::<IpAddr>().is_ok()
         || literal
@@ -108,6 +141,7 @@ fn is_valid_domain_literal(literal: &str) -> bool {
             .is_some()
 }
 
+/// Validates internationalized domain names per RFC 5890 and RFC 6531
 fn is_valid_domain_name(domain: &str) -> bool {
     let labels: Vec<&str> = domain.split('.').collect();
     labels.len() >= 1

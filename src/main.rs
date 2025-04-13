@@ -1,4 +1,3 @@
-pub mod validation;
 use actix_web::{App, HttpServer};
 use email_sanitizer::routes;
 
