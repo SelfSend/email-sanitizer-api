@@ -21,7 +21,7 @@ use trust_dns_resolver::{
 ///
 /// # Examples
 /// ```
-/// use email_dns_validator::validate_email_dns;
+/// use email_sanitizer::validation::dnsmx::validate_email_dns;
 ///
 /// let valid = validate_email_dns("user@example.com");
 /// assert!(valid);
