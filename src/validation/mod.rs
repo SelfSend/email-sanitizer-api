@@ -46,3 +46,5 @@ pub mod dnsmx;
 /// # Returns
 /// `true` if the email address meets all syntax requirements, `false` otherwise
 pub mod syntax;
+
+pub mod disposable;
