@@ -1,3 +1,5 @@
+[![Basic CI](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml/badge.svg)](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml)
+
 # email-sanitizer by SelfSend
 
 A high-performance and secure REST/GraphQL API built with Rust, MongoDB & Redis for cleaning email subscriber lists. Maintains sender reputation by validating, deduplicating, and pruning inactive emails.
