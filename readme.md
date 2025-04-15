@@ -1,11 +1,12 @@
+[![Basic CI](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml/badge.svg)](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml)
+
 # email-sanitizer by SelfSend
 
-A high-performance and secure REST/GraphQL API built with Rust, PostgreSQL & Redis for cleaning email subscriber lists. Maintains sender reputation by validating, deduplicating, and pruning inactive emails.
+A high-performance and secure REST/GraphQL API built with Rust, MongoDB & Redis for cleaning email subscriber lists. Maintains sender reputation by validating, deduplicating, and pruning inactive emails.
 
 ## 🚀 Features
 
 - **Scalable Architecture**: Built with Rust and optimized for horizontal scaling.
-- **Real-Time Support**: Optional WebSocket/SSE endpoints for real-time communication.
 - **Security First**: OAuth2/JWT authentication, rate limiting, and input validation.
 - **Observability**: Integrated logging, metrics, and distributed tracing.
 - **Multi-Protocol Support**: REST, GraphQL, or gRPC endpoints (choose as needed).
@@ -16,7 +17,7 @@ Detect and handle invalid email addresses before they take some space in your da
 
 The API can be used to validate email addresses in real-time or in bulk. It can also be used to clean up existing email lists by removing invalid or duplicate addresses.
 
-The API is designed to be fast and efficient, capable of processing thousands of email addresses per second. It can be integrated into existing applications or used as a standalone service.
+The API is built with Rust, designed to be fast and efficient, capable of processing thousands of email addresses per second. It can be integrated into existing applications or used as a standalone service.
 
 Currently including multiple edge-cases and validation checks:
 
@@ -48,7 +49,11 @@ Currently including multiple edge-cases and validation checks:
 
 ### DNS/MX Records Validation Checks
 
-Follows RFC specifications by checking A/AAAA records if MX records are missing. Returns true if either MX records exist or direct IP records (A/AAAA) are present
+Follows RFC specifications by checking A/AAAA records if MX records are missing. Checks either MX records exist or direct IP records (A/AAAA) are present
+
+### Disposable Email Address Validation Checks
+
+Checks among a list of 106,543 disposable email domains, the largest database of disposable emails out there. The list is updated daily and includes domains from various disposable email providers.
 
 ## 🛠 Tech Stack
 
@@ -56,7 +61,7 @@ Follows RFC specifications by checking A/AAAA records if MX records are missing.
 | -------------- | --------------------------------------- |
 | **Language**   | Rust                                    |
 | **Framework**  | Actix                                   |
-| **Database**   | PostgreSQL + Redis (caching)            |
+| **Database**   | MongoDB + Redis (caching)               |
 | **Infra**      | AWS Lambda/Kubernetes + Terraform (IaC) |
 | **Auth**       | Auth0/Clerk/PASETO/OAuth2               |
 | **Monitoring** | Prometheus + Grafana, ELK Stack         |
@@ -66,7 +71,7 @@ Follows RFC specifications by checking A/AAAA records if MX records are missing.
 ### Prerequisites
 
 - Rust 1.65+
-- PostgreSQL/Redis (or Docker)
+- MongoDB/Redis (or Docker)
 - Terraform (optional, for cloud provisioning)
 
 ### Installation
@@ -86,7 +91,7 @@ Configure your `.env` file:
 
 ```bash
   PORT=3000
-  DATABASE_URL=postgresql://user:pass@localhost:5432/db
+  DATABASE_URL=mongodb://xxxx
   REDIS_URL=redis://localhost:6379
   JWT_SECRET=your_secure_secret
   API_RATE_LIMIT=100
@@ -120,7 +125,7 @@ MIT License.
 
 ### 🌟 Future Roadmap
 
-#### **Email Sanitization API Roadmap (Rust, PostgreSQL, Redis, REST & GraphQL)**
+#### **Email Sanitization API Roadmap (Rust, MongoDB, Redis, REST & GraphQL)**
 
 ##### **Phase 1: Core Setup & Validation (Sprint 1-2)**
 
@@ -138,7 +143,7 @@ MIT License.
    - Add DNS/MX record verification.
    - **DoD**: Unit tests cover 90% of cases, returns structured validation results.
 
-3. **PostgreSQL Integration & Disposable emails validation**
+3. **MongoDB Integration & Disposable emails validation**
 
    - Design database schema for disposable email domains.
    - Implement disposable email addreses validation.
@@ -175,7 +180,7 @@ MIT License.
 
 8. **Bulk Processing**
    - Add async bulk validation endpoint (`POST /bulk/validate`).
-   - Implement job queue (Redis or PostgreSQL).
+   - Implement job queue (Redis or MongoDB).
    - **DoD**: Processes 10K emails in <5 mins, returns job status.
 
 ---
