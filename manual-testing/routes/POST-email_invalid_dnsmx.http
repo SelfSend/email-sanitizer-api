@@ -1,0 +1,15 @@
+POST http://localhost:8080/api/v1/validate-email
+Content-Type: application/json
+
+{ "email": "oksyntax@isnotdisposable.com" }
+
+//  HTTP/1.1 400 Bad Request
+//  content-length: 76
+//  connection: close
+//  content-type: application/json
+//  date: Wed, 16 Apr 2025 13:39:41 GMT
+
+//  {
+//    "error": "INVALID_DOMAIN",
+//    "message": "Email domain has no valid DNS records"
+//  }
