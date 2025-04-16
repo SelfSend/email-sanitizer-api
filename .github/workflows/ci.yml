@@ -1,19 +1,14 @@
 name: CI
 on: [push, pull_request]
 
-env:
-  CARGO_TERM_COLOR: always
-  MONGODB_URI: ${{ secrets.MONGODB_URI }}
-  DB_NAME: ${{ secrets.DB_NAME }}
-  DB_DISPOSABLE_EMAILS_COLLECTION: ${{ secrets.DB_DISPOSABLE_EMAILS_COLLECTION }}
-
 jobs:
   basic-checks:
     runs-on: ubuntu-latest
     env:
       CARGO_TERM_COLOR: always
       MONGODB_URI: ${{ secrets.MONGODB_URI }}
-      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_NAME_TEST: ${{ secrets.DB_NAME_TEST }}
+      DB_NAME_PRODUCTION: ${{ secrets.DB_NAME_PRODUCTION }}
       DB_DISPOSABLE_EMAILS_COLLECTION: ${{ secrets.DB_DISPOSABLE_EMAILS_COLLECTION }}
     steps:
       - name: Checkout code
