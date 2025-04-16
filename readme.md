@@ -1,5 +1,5 @@
-[![Tests](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml/badge.svg)](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml)
-[![Lint Checks](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml/badge.svg)](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml)
+[![CI](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml/badge.svg)](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/SelfSend/email-sanitizer-api/branch/main/graph/badge.svg)](https://codecov.io/gh/SelfSend/email-sanitizer-api)
 
 # email-sanitizer by SelfSend
 
