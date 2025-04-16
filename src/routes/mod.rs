@@ -76,7 +76,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use actix_web::{App, Error, body::to_bytes, dev::Service, http::StatusCode, test, web};
+    use actix_web::{App, Error, body::to_bytes, dev::Service, http::StatusCode, test};
     use serde_json::json;
 
     #[actix_web::test]
