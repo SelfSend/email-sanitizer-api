@@ -1,4 +1,5 @@
-[![CI](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml/badge.svg)](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml)
+[![Tests](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml/badge.svg)](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml)
+[![Lint Checks](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml/badge.svg)](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml)
 
 # email-sanitizer by SelfSend
 
@@ -132,26 +133,26 @@ MIT License.
 
 ###### **Tasks**
 
-1. **Project Initialization**
+1. **Project Initialization** ✅
 
-   - Set up Rust project with Actix/Axum.
-   - Configure CI/CD (GitHub Actions).
-   - **DoD**: Project builds successfully, CI pipeline passes.
+   - Set up Rust project with Actix/Axum. ✅
+   - Configure CI/CD (GitHub Actions). ✅
+   - **DoD**: Project builds successfully, CI pipeline passes. ✅
 
-2. **Basic Email Validation**
+2. **Basic Email Validation** ✅
 
-   - Implement syntax validation (regex).
-   - Add DNS/MX record verification.
-   - **DoD**: Unit tests cover 90% of cases, returns structured validation results.
+   - Implement syntax validation (regex). ✅
+   - Add DNS/MX record verification. ✅
+   - **DoD**: Unit tests cover 90% of cases, returns structured validation results. ✅
 
-3. **MongoDB Integration & Disposable emails validation**
+3. **MongoDB Integration & Disposable emails validation** ✅
 
-   - Design database schema for disposable email domains.
-   - Implement disposable email addreses validation.
-   - **DoD**: DB migrations applied, test queries succeed.
+   - Design database schema for disposable email domains. ✅
+   - Implement disposable email addreses validation. ✅
+   - **DoD**: DB migrations applied, test queries succeed. ✅
 
 4. **REST API (Basic Endpoints)**
-   - Implement `POST /validate` for single email validation.
+   - Implement `POST /validate` for single email validation. ✅
    - Add error handling and OpenAPI docs.
    - **DoD**: Endpoint tested via Postman, Swagger UI works.
 

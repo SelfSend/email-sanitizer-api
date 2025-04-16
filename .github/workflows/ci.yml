@@ -26,6 +26,11 @@ jobs:
       - name: Run Tests
         run: cargo test --verbose
 
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Check Formatting
         run: cargo fmt --all -- --check
 
