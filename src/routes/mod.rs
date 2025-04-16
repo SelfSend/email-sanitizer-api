@@ -72,3 +72,63 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .configure(email::configure_routes),
     );
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{App, Error, body::to_bytes, dev::Service, http::StatusCode, test, web};
+    use serde_json::json;
+
+    #[actix_web::test]
+    async fn test_api_v1_scope() -> Result<(), Error> {
+        let app = test::init_service(App::new().configure(configure)).await;
+
+        // Test health endpoint
+        let req = test::TestRequest::get().uri("/api/v1/health").to_request();
+        let resp = app.call(req).await?;
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // Verify health response structure
+        let body = to_bytes(resp.into_body()).await?;
+        let health_response: serde_json::Value = serde_json::from_slice(&body)?;
+        assert_eq!(health_response["status"], "UP");
+        assert!(health_response["timestamp"].as_str().is_some());
+
+        // Test valid email validation request
+        let valid_req = test::TestRequest::post()
+            .uri("/api/v1/validate-email")
+            .set_json(json!({ "email": "test@example.com" }))
+            .to_request();
+        let valid_resp = app.call(valid_req).await?;
+        assert!(valid_resp.status().is_success());
+
+        // Test invalid email syntax
+        let invalid_syntax_req = test::TestRequest::post()
+            .uri("/api/v1/validate-email")
+            .set_json(json!({ "email": "invalid-email" }))
+            .to_request();
+        let invalid_syntax_resp = app.call(invalid_syntax_req).await?;
+        assert_eq!(invalid_syntax_resp.status(), StatusCode::BAD_REQUEST);
+
+        // Test missing request body
+        let empty_body_req = test::TestRequest::post()
+            .uri("/api/v1/validate-email")
+            .to_request();
+        let empty_body_resp = app.call(empty_body_req).await?;
+        assert_eq!(empty_body_resp.status(), StatusCode::BAD_REQUEST);
+
+        // Test non-existent endpoint within scope
+        let req = test::TestRequest::get()
+            .uri("/api/v1/nonexistent")
+            .to_request();
+        let resp = app.call(req).await?;
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+        // Verify scope isolation - health endpoint shouldn't exist outside /api/v1
+        let req = test::TestRequest::get().uri("/health").to_request();
+        let resp = app.call(req).await?;
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+        Ok(())
+    }
+}
