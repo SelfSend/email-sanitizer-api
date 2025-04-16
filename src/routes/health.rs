@@ -1,11 +1,35 @@
 use crate::models::HealthResponse;
 use actix_web::{HttpResponse, Responder, get};
 
+/// # Health Check Endpoint
+///
+/// Returns the current health status of the service along with a timestamp.
+///
+/// ## Response
+///
+/// - **200 OK**: Service is healthy
+///   - Body: JSON object with `status` ("UP") and `timestamp` in ISO 8601 format
+///
+/// ## Example Response
+///
+/// ```json
+/// {
+///   "status": "UP",
+///   "timestamp": "2023-10-05T12:34:56.789Z"
+/// }
+/// ```
 #[get("/health")]
 pub async fn health() -> impl Responder {
     HttpResponse::Ok().json(HealthResponse::up())
 }
 
+/// # Route Configuration
+///
+/// Registers all API endpoints with the Actix-web service configuration.
+///
+/// ## Currently Configured Routes
+///
+/// - `GET /health`: Health check endpoint
 pub fn configure_routes(cfg: &mut actix_web::web::ServiceConfig) {
     cfg.service(health);
 }
@@ -16,6 +40,7 @@ mod tests {
     use actix_web::{App, test};
     use serde_json::from_str;
 
+    /// Health endpoint test suite
     #[actix_web::test]
     async fn test_health_endpoint() {
         // Set up test app

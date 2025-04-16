@@ -1,4 +1,4 @@
-[![Basic CI](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml/badge.svg)](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml)
+[![CI](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml/badge.svg)](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml)
 
 # email-sanitizer by SelfSend
 
@@ -53,7 +53,7 @@ Follows RFC specifications by checking A/AAAA records if MX records are missing.
 
 ### Disposable Email Address Validation Checks
 
-Checks among a list of 106,543 disposable email domains, the largest database of disposable emails out there. The list is updated daily and includes domains from various disposable email providers.
+Checks among a list of 106,543 disposable email domains, the largest database of disposable emails out there, updated daily.
 
 ## 🛠 Tech Stack
 
@@ -78,7 +78,7 @@ Checks among a list of 106,543 disposable email domains, the largest database of
 
 1. Clone the repo:
    ```bash
-   git clone https://github.com/SelfSend/email-sanitizer.git
+   git clone https://github.com/SelfSend/email-sanitizer-api.git
    ```
 2. Install Dependencies:
    ```bash
@@ -113,7 +113,8 @@ cargo build --release
 - Create a branch:
 
 ```bash
-git checkout -b feat/issue-number-issue-name #9-set-up-rust-project-with-actixaxum
+git checkout -b feat/issue-number-issue-name
+#git checkout -b "feat/9-set-up-rust-project-with-actixaxum"
 ```
 
 - Follow Conventional Commits.
@@ -253,4 +254,4 @@ MIT License.
 
 ---
 
-![selfsend-github-bio](https://github.com/user-attachments/assets/dbbabdc1-7e2b-4faf-93f9-03e3aa21a912)
+![selfsend-github-bio](https://github.com/user-attachments/assets/66e57877-06d3-4156-b5d6-cd4a28f30c71)
