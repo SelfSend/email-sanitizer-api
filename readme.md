@@ -1,4 +1,5 @@
-[![Basic CI](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml/badge.svg)](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml)
+[![CI](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml/badge.svg)](https://github.com/SelfSend/email-sanitizer-api/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/SelfSend/email-sanitizer-api/branch/main/graph/badge.svg)](https://codecov.io/gh/SelfSend/email-sanitizer-api)
 
 # email-sanitizer by SelfSend
 
@@ -53,7 +54,7 @@ Follows RFC specifications by checking A/AAAA records if MX records are missing.
 
 ### Disposable Email Address Validation Checks
 
-Checks among a list of 106,543 disposable email domains, the largest database of disposable emails out there. The list is updated daily and includes domains from various disposable email providers.
+Checks among a list of 106,543 disposable email domains, the largest database of disposable emails out there, updated daily.
 
 ## 🛠 Tech Stack
 
@@ -78,7 +79,7 @@ Checks among a list of 106,543 disposable email domains, the largest database of
 
 1. Clone the repo:
    ```bash
-   git clone https://github.com/SelfSend/email-sanitizer.git
+   git clone https://github.com/SelfSend/email-sanitizer-api.git
    ```
 2. Install Dependencies:
    ```bash
@@ -113,7 +114,8 @@ cargo build --release
 - Create a branch:
 
 ```bash
-git checkout -b feat/issue-number-issue-name #9-set-up-rust-project-with-actixaxum
+git checkout -b feat/issue-number-issue-name
+#git checkout -b "feat/9-set-up-rust-project-with-actixaxum"
 ```
 
 - Follow Conventional Commits.
@@ -131,26 +133,26 @@ MIT License.
 
 ###### **Tasks**
 
-1. **Project Initialization**
+1. **Project Initialization** ✅
 
-   - Set up Rust project with Actix/Axum.
-   - Configure CI/CD (GitHub Actions).
-   - **DoD**: Project builds successfully, CI pipeline passes.
+   - Set up Rust project with Actix/Axum. ✅
+   - Configure CI/CD (GitHub Actions). ✅
+   - **DoD**: Project builds successfully, CI pipeline passes. ✅
 
-2. **Basic Email Validation**
+2. **Basic Email Validation** ✅
 
-   - Implement syntax validation (regex).
-   - Add DNS/MX record verification.
-   - **DoD**: Unit tests cover 90% of cases, returns structured validation results.
+   - Implement syntax validation (regex). ✅
+   - Add DNS/MX record verification. ✅
+   - **DoD**: Unit tests cover 90% of cases, returns structured validation results. ✅
 
-3. **MongoDB Integration & Disposable emails validation**
+3. **MongoDB Integration & Disposable emails validation** ✅
 
-   - Design database schema for disposable email domains.
-   - Implement disposable email addreses validation.
-   - **DoD**: DB migrations applied, test queries succeed.
+   - Design database schema for disposable email domains. ✅
+   - Implement disposable email addreses validation. ✅
+   - **DoD**: DB migrations applied, test queries succeed. ✅
 
 4. **REST API (Basic Endpoints)**
-   - Implement `POST /validate` for single email validation.
+   - Implement `POST /validate` for single email validation. ✅
    - Add error handling and OpenAPI docs.
    - **DoD**: Endpoint tested via Postman, Swagger UI works.
 
@@ -253,4 +255,4 @@ MIT License.
 
 ---
 
-![selfsend-github-bio](https://github.com/user-attachments/assets/dbbabdc1-7e2b-4faf-93f9-03e3aa21a912)
+![selfsend-github-bio](https://github.com/user-attachments/assets/66e57877-06d3-4156-b5d6-cd4a28f30c71)

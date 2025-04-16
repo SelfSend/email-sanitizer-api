@@ -1,0 +1,15 @@
+POST http://localhost:8080/api/v1/validate-email
+Content-Type: application/json
+
+{ "email": "user@example.com" }
+
+//  HTTP/1.1 200 OK
+//  content-length: 53
+//  connection: close
+//  content-type: application/json
+//  date: Wed, 16 Apr 2025 13:36:35 GMT
+
+//  {
+//    "status": "VALID",
+//    "message": "Email address is valid"
+//  }
