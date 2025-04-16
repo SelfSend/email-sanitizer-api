@@ -1,0 +1,15 @@
+POST http://localhost:8080/api/v1/validate-email
+Content-Type: application/json
+
+{ "email": "invalidsyntax" }
+
+//  HTTP/1.1 400 Bad Request
+//  content-length: 71
+//  connection: close
+//  content-type: application/json
+//  date: Wed, 16 Apr 2025 13:24:21 GMT
+
+//  {
+//  "error": "INVALID_SYNTAX",
+//  "message": "Email address has invalid syntax"
+//  }

@@ -1,6 +1,6 @@
 [package]
 name = "email-sanitizer"
-version = "0.3.0+sprint1"
+version = "0.4.0+sprint2"
 edition = "2024"
 
 [dependencies]
@@ -12,6 +12,7 @@ chrono = "0.4.40"
 serde_json = "1.0.140"
 trust-dns-resolver = "0.23.2"
 mongodb = { version = "3.2.3" }
+futures = "0.3.31"
 
 [dev-dependencies]
 husky = "0.3.0"
