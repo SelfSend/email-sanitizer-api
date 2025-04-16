@@ -1,0 +1,12 @@
+GET http://localhost:8080/api/v1/health
+
+//  HTTP/1.1 200 OK
+//  content-length: 65
+//  connection: close
+//  content-type: application/json
+//  date: Wed, 16 Apr 2025 12:45:04 GMT
+
+//  {
+//    "status": "UP",
+//    "timestamp": "2025-04-16T12:45:04.133150700+00:00"
+//  }

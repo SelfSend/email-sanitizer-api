@@ -3,6 +3,7 @@ use email_sanitizer::routes;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    dotenv::dotenv().ok();
     HttpServer::new(|| App::new().configure(routes::configure))
         .bind(("127.0.0.1", 8080))?
         .run()
