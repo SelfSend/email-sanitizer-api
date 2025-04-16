@@ -1,6 +1,3 @@
-use crate::models::health::HealthResponse;
-use actix_web::{HttpResponse, Responder};
-
 /// # Service Health Check Endpoint
 ///
 /// Provides a liveness probe for the service, indicating whether the API is operational.
@@ -22,6 +19,7 @@ use actix_web::{HttpResponse, Responder};
 /// ```
 ///
 /// [`HealthResponse`]: crate::models::health::HealthResponse
-pub async fn health_check() -> impl Responder {
-    HttpResponse::Ok().json(HealthResponse::up())
-}
+pub mod health;
+
+/// Validation functions for email addresses
+pub mod validation;

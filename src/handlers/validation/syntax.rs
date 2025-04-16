@@ -9,7 +9,7 @@ use std::net::{IpAddr, Ipv6Addr};
 ///
 /// # Examples
 /// ```
-/// use email_sanitizer::validation::syntax::is_valid_email;
+/// use email_sanitizer::handlers::validation::syntax::is_valid_email;
 ///
 /// assert!(is_valid_email("user.name+tag@example.com"));
 /// assert!(is_valid_email("Pelé@exämple.中国"));

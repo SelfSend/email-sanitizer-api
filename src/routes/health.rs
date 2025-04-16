@@ -1,4 +1,4 @@
-use crate::models::HealthResponse;
+use crate::models::health::HealthResponse;
 use actix_web::{HttpResponse, Responder, get};
 
 /// # Health Check Endpoint

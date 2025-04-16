@@ -13,7 +13,7 @@
 ///
 /// # Examples
 /// ```
-/// use email_sanitizer::validation::dnsmx::validate_email_dns;
+/// use email_sanitizer::handlers::validation::dnsmx::validate_email_dns;
 ///
 /// let valid = validate_email_dns("user@example.com");
 /// assert!(valid);
@@ -33,7 +33,7 @@ pub mod dnsmx;
 ///
 /// # Examples
 /// ```
-/// use email_sanitizer::validation::syntax::is_valid_email;
+/// use email_sanitizer::handlers::validation::syntax::is_valid_email;
 ///
 /// assert!(is_valid_email("user.name+tag@example.com"));
 /// assert!(is_valid_email("Pelé@exämple.中国"));
@@ -66,7 +66,7 @@ pub mod syntax;
 /// # Example
 /// ```
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-/// use email_sanitizer::validation::disposable::is_disposable_email; // Add the correct use statement
+/// use email_sanitizer::handlers::validation::disposable::is_disposable_email; // Add the correct use statement
 /// let is_spam = is_disposable_email("example@0-00.usa.cc").await?;
 /// assert_eq!(is_spam, true);
 /// # Ok(())
