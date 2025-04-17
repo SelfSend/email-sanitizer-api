@@ -1,9 +1,10 @@
 use crate::handlers::validation::{disposable, dnsmx, syntax};
-use actix_web::{HttpResponse, Responder, web};
+use actix_web::{HttpResponse, Responder, post, web};
 use serde::Deserialize;
 use serde_json::json;
+use utoipa::ToSchema;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct EmailRequest {
     email: String,
 }
@@ -31,6 +32,18 @@ pub struct EmailRequest {
 /// ```json
 /// { "email": "user@example.com" }
 /// ```
+#[utoipa::path(
+    post,
+    path = "/api/v1/validate-email",
+    request_body = EmailRequest,
+    responses(
+        (status = 200, description = "Email is valid"),
+        (status = 400, description = "Invalid email"),
+        (status = 500, description = "Server error")
+    ),
+    tag = "Email Validation"
+)]
+#[post("/validate-email")]
 pub async fn validate_email(
     req: web::Json<EmailRequest>,
 ) -> Result<impl Responder, actix_web::Error> {
@@ -78,7 +91,7 @@ pub async fn validate_email(
 
 /// Configures email validation routes under /api/v1
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::resource("/validate-email").route(web::post().to(validate_email)));
+    cfg.service(validate_email);
 }
 
 #[cfg(test)]

@@ -6,6 +6,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CARGO_TERM_COLOR: always
+      RUSTFLAGS: "-C instrument-coverage"
+      LLVM_PROFILE_FILE: "cargo-test-%p-%m.profraw"
       MONGODB_URI: ${{ secrets.MONGODB_URI }}
       DB_NAME_TEST: ${{ secrets.DB_NAME_TEST }}
       DB_NAME_PRODUCTION: ${{ secrets.DB_NAME_PRODUCTION }}
@@ -14,8 +16,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Rust
+      - name: Install Rust and coverage tools
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - name: Install grcov
+        run: cargo install grcov
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
@@ -23,13 +30,17 @@ jobs:
       - name: Build Project
         run: cargo build --verbose
 
-      - name: Run Tests
-        run: cargo test --verbose
+      - name: Run Tests with Coverage
+        run: |
+          cargo test --verbose
+          # Generate coverage report
+          grcov . --binary-path ./target/debug/ -s . -t lcov -o ./coverage.lcov
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.lcov
 
       - name: Check Formatting
         run: cargo fmt --all -- --check
