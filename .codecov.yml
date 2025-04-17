@@ -1,0 +1,4 @@
+ignore:
+  - "src/lib.rs"
+  - "src/main.rs"
+  - "src/openapi.rs"

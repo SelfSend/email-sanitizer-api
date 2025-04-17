@@ -1,5 +1,6 @@
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 /// # Health Status Response
 ///
@@ -20,7 +21,7 @@ use serde::{Deserialize, Serialize};
 ///   "timestamp": "2024-03-10T15:30:45.123456789Z"
 /// }
 /// ```
-#[derive(Serialize, Debug, PartialEq, Deserialize)]
+#[derive(Serialize, ToSchema, Debug, PartialEq, Deserialize)]
 pub struct HealthResponse {
     pub status: String,
     pub timestamp: String,

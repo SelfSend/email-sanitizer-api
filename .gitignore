@@ -5,6 +5,9 @@
 # Env variables
 .env
 
+# Coverage Reports
+/coverage-report/
+
 # Others
 .DS_Store
 .idea/

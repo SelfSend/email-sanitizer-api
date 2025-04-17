@@ -1,6 +1,6 @@
 [package]
 name = "email-sanitizer"
-version = "0.4.0+sprint2"
+version = "0.5.0+sprint2"
 edition = "2024"
 
 [dependencies]
@@ -13,6 +13,8 @@ serde_json = "1.0.140"
 trust-dns-resolver = "0.23.2"
 mongodb = { version = "3.2.3" }
 futures = "0.3.31"
+utoipa = { version = "5.3.1" }
+utoipa-swagger-ui = { version = "9.0.1", features = ["actix-web"] }
 
 [dev-dependencies]
 husky = "0.3.0"
