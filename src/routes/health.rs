@@ -18,6 +18,14 @@ use actix_web::{HttpResponse, Responder, get};
 ///   "timestamp": "2023-10-05T12:34:56.789Z"
 /// }
 /// ```
+#[utoipa::path(
+    get,
+    path = "/api/v1/health",
+    responses(
+        (status = 200, description = "Service is healthy", body = HealthResponse)
+    ),
+    tag = "Health Check"
+)]
 #[get("/health")]
 pub async fn health() -> impl Responder {
     HttpResponse::Ok().json(HealthResponse::up())
