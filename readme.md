@@ -155,8 +155,8 @@ MIT License.
 
 4. **REST API (Basic Endpoints)**
    - Implement `POST /validate` for single email validation. ✅
-   - Add error handling and OpenAPI docs.
-   - **DoD**: Endpoint tested via Postman, Swagger UI works.
+   - Add error handling and OpenAPI docs. ✅
+   - **DoD**: Endpoint tested via Postman, Swagger UI works. ✅
 
 ---
 
