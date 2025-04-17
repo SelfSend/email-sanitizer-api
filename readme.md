@@ -129,8 +129,6 @@ MIT License.
 
 ### 🌟 Future Roadmap
 
-#### **Email Sanitization API Roadmap (Rust, MongoDB, Redis, REST & GraphQL)**
-
 ##### **Phase 1: Core Setup & Validation (Sprint 1-2)**
 
 ###### **Tasks**
@@ -193,16 +191,16 @@ MIT License.
 
 ###### **Tasks**
 
-9. **Rate Limiting**
+9. **Authentication & Authorization**
 
-   - Implement Redis-based rate limiting (per API key).
-   - **DoD**: Rejects requests beyond 10 reqs/sec, logs violations.
+   - Add JWT/API key authentication.
+   - Restrict sensitive endpoints.
+   - **DoD**: Unauthorized requests blocked, keys validated via DB.
 
-10. **Authentication & Authorization**
+10. **Rate Limiting**
 
-    - Add JWT/API key authentication.
-    - Restrict sensitive endpoints.
-    - **DoD**: Unauthorized requests blocked, keys validated via DB.
+- Implement Redis-based rate limiting (per API key).
+- **DoD**: Rejects requests beyond 10 reqs/sec, logs violations.
 
 11. **Monitoring & Logging**
 
