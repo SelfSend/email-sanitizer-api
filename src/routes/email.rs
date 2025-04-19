@@ -123,4 +123,25 @@ mod tests {
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status().as_u16(), 400);
     }
+
+    #[actix_web::test]
+    async fn test_invalid_domain() {
+        let app = test::init_service(App::new().configure(configure_routes)).await;
+        let req = test::TestRequest::post()
+            .uri("/validate-email")
+            .set_json(json!({ "email": "test@nonexistent.invalid" }))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status().as_u16(), 400);
+
+        // Verify error details
+        let body = test::read_body(resp).await;
+        let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(body_json["error"], "INVALID_DOMAIN");
+        assert_eq!(
+            body_json["message"],
+            "Email domain has no valid DNS records"
+        );
+    }
 }
