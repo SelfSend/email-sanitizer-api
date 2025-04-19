@@ -1,75 +1,50 @@
 use actix_web::web;
 
-/// # Health Check Endpoint
-///
-/// Returns the current health status of the service along with a timestamp.
-///
-/// ## Response
-///
-/// - **200 OK**: Service is healthy
-///   - Body: JSON object with `status` ("UP") and `timestamp` in ISO 8601 format
-///
-/// ## Example Response
-///
-/// ```json
-/// {
-///   "status": "UP",
-///   "timestamp": "2023-10-05T12:34:56.789Z"
-/// }
-/// ```
-pub mod health;
-
-/// # Email Validation Endpoint
-///
-/// Validates an email address by checking three aspects:
-/// 1. RFC-compliant syntax validation
-/// 2. Domain DNS/MX record verification
-/// 3. Disposable email domain check
-///
-/// ## Request
-/// - Method: POST
-/// - Body: JSON object with `email` field
-///
-/// ## Responses
-/// - **200 OK**: Email is valid
-/// - **400 Bad Request**:
-///   - Invalid email syntax
-///   - Domain has no valid MX/A/AAAA records
-///   - Disposable email detected
-/// - **500 Internal Server Error**: Database connection failed
-///
-/// ## Example Request
-/// ```json
-/// { "email": "user@example.com" }
-/// ```
+// Existing module imports
 pub mod email;
+pub mod health;
+// Add new GraphQL routes
+pub mod graphql;
 
-/// # API Route Configuration
+/// Central API Route Configuration
 ///
-/// Sets up versioned API endpoints under the `/api/v1` base path.
+/// Configures versioned API endpoints under the `/api/v1` namespace with:
+/// - REST endpoints for health checks and email validation
+/// - GraphQL API endpoints and playground
+/// - Unified error handling across all routes
 ///
-/// ## API Version
-/// - Version: 1.0
-/// - Base Path: `/api/v1`
+/// # API Versioning
+/// - Current version: `1.0`
+/// - Base path: `/api/v1`
 ///
-/// ## Mounted Services
-/// - Health check endpoints (see [`health::configure_routes`] for details)
-/// - Email validation endpoints (see [`email::configure_routes`] for details)
+/// # Mounted Services
+/// - Health Monitoring: [`health::configure_routes`]
+/// - Email Validation: [`email::configure_routes`]
+/// - GraphQL Interface: [`graphql::configure_routes`]
 ///
-/// ## Example Endpoints
-///
+/// # Endpoints Overview
 /// ```text
-/// GET /api/v1/health - Service health status
-/// POST /api/v1/validate-email - Email validation endpoint
+/// GET    /api/v1/health       - Service health status
+/// POST   /api/v1/validate-email - Email validation
+/// POST   /api/v1/graphql      - GraphQL query endpoint
+/// GET    /api/v1/playground   - Interactive GraphQL IDE
 /// ```
+///
+/// # Architecture
+/// Routes are organized in scope-based groups to:
+/// - Enforce consistent API versioning
+/// - Apply middleware at appropriate scopes
+/// - Maintain separation of concerns between features
 ///
 /// [`health::configure_routes`]: crate::routes::health::configure_routes
 /// [`email::configure_routes`]: crate::routes::email::configure_routes
+/// [`graphql::configure_routes`]: crate::routes::graphql::configure_routes
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api/v1")
             .configure(health::configure_routes)
-            .configure(email::configure_routes),
+            .configure(email::configure_routes)
+            .configure(graphql::configure_routes),
     );
 }
 
@@ -79,6 +54,14 @@ mod tests {
     use actix_web::{App, Error, body::to_bytes, dev::Service, http::StatusCode, test};
     use serde_json::json;
 
+    /// Comprehensive route integration tests
+    ///
+    /// Validates:
+    /// - Correct route mounting under /api/v1 scope
+    /// - Endpoint response status codes
+    /// - Response body structures
+    /// - Error handling for invalid requests
+    /// - Scope isolation preventing route leakage
     #[actix_web::test]
     async fn test_api_v1_scope() -> Result<(), Error> {
         let app = test::init_service(App::new().configure(configure)).await;
