@@ -164,7 +164,7 @@ MIT License.
 
 5. **GraphQL Integration**
 
-   - Set up GraphQL server (Async-GraphQL/Juniper).
+   - Set up GraphQL server (Async-GraphQL). ✅
    - Add `validateEmail` query and `validateBulkEmails` mutation.
    - **DoD**: GraphQL playground accessible, queries return correct responses.
 
