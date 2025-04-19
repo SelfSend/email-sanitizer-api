@@ -144,4 +144,25 @@ mod tests {
             "Email domain has no valid DNS records"
         );
     }
+
+    #[actix_web::test]
+    async fn test_disposable_email_detection() {
+        let app = test::init_service(App::new().configure(configure_routes)).await;
+        let req = test::TestRequest::post()
+            .uri("/validate-email")
+            // Use a known disposable domain that has valid DNS records
+            .set_json(json!({ "email": "user@mailinator.com" }))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status().as_u16(), 400);
+
+        let body = test::read_body(resp).await;
+        let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(body_json["error"], "DISPOSABLE_EMAIL");
+        assert_eq!(
+            body_json["message"],
+            "The email address domain is a provider of disposable email addresses"
+        );
+    }
 }
