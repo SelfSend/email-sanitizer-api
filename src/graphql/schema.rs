@@ -25,10 +25,5 @@ pub type AppSchema = Schema<HealthQuery, EmptyMutation, EmptySubscription>;
 /// let schema = create_schema();
 /// ```
 pub fn create_schema() -> AppSchema {
-    Schema::build(
-        HealthQuery::default(),
-        EmptyMutation::default(),
-        EmptySubscription::default(),
-    )
-    .finish()
+    Schema::build(HealthQuery, EmptyMutation, EmptySubscription).finish()
 }
