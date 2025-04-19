@@ -12,20 +12,17 @@ use async_graphql::{EmptyMutation, EmptySubscription, Schema};
 /// - `EmptySubscription`: Placeholder for subscription operations (currently unused)
 pub type AppSchema = Schema<HealthQuery, EmptyMutation, EmptySubscription>;
 
-/// Constructs and configures the application's GraphQL schema
+/// Creates a new GraphQL schema with configured queries and mutations.
 ///
-/// Initializes the schema with:
-/// - HealthQuery as the root query type
-/// - Empty mutation and subscription types
-///
-/// # Returns
-/// Fully initialized [`AppSchema`] ready for query execution
+/// This function combines the health check query and any future GraphQL
+/// operations into a unified schema that can be used with the GraphQL handler.
 ///
 /// # Example
-/// ```rust
+///
+/// ```rust,no_run
+/// use email_sanitizer::graphql::schema::create_schema;
+///
 /// let schema = create_schema();
-/// let query = "{ health { status timestamp } }";
-/// let response = schema.execute(query).await;
 /// ```
 pub fn create_schema() -> AppSchema {
     Schema::build(
