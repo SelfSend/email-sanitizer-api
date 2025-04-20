@@ -162,4 +162,55 @@ mod tests {
         let data = res.data.into_json().unwrap();
         assert!(data["validateEmail"]["isValid"].is_boolean());
     }
+
+    #[tokio::test]
+    async fn test_validate_email_invalid_syntax() {
+        // Create a schema for testing
+        let schema = Schema::build(
+            EmailQuery::default(),
+            async_graphql::EmptyMutation,
+            async_graphql::EmptySubscription,
+        )
+        .finish();
+
+        // Execute the query with an invalid email
+        let query = r#"
+            query {
+                validateEmail(email: "invalid-email") {
+                    isValid
+                    status
+                    error {
+                        code
+                        message
+                    }
+                }
+            }
+        "#;
+
+        let res = schema.execute(query).await;
+
+        // Ensure no GraphQL errors occurred
+        assert!(
+            res.errors.is_empty(),
+            "GraphQL query has errors: {:?}",
+            res.errors
+        );
+
+        // Extract and verify the response data
+        let data = res.data.into_json().unwrap();
+        let validation_result = &data["validateEmail"];
+
+        // Verify is_valid is false
+        assert_eq!(validation_result["isValid"], false);
+
+        // Verify status is null
+        assert!(validation_result["status"].is_null());
+
+        // Verify error details
+        assert_eq!(validation_result["error"]["code"], "INVALID_SYNTAX");
+        assert_eq!(
+            validation_result["error"]["message"],
+            "Email address has invalid syntax"
+        );
+    }
 }
