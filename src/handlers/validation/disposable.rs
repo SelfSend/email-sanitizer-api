@@ -23,7 +23,7 @@ use std::error::Error;
 /// ```
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// use email_sanitizer::handlers::validation::disposable::is_disposable_email;
-/// let is_spam = is_disposable_email("example@0-00.usa.cc").await?;
+/// let is_spam = is_disposable_email("example@mailinator.com").await?;
 /// assert_eq!(is_spam, true);
 /// # Ok(())
 /// # }
