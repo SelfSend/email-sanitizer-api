@@ -151,7 +151,7 @@ MIT License.
    - Implement disposable email addreses validation. ✅
    - **DoD**: DB migrations applied, test queries succeed. ✅
 
-4. **REST API (Basic Endpoints)**
+4. **REST API (Basic Endpoints)** ✅
    - Implement `POST /validate` for single email validation. ✅
    - Add error handling and OpenAPI docs. ✅
    - **DoD**: Endpoint tested via Postman, Swagger UI works. ✅
@@ -162,11 +162,11 @@ MIT License.
 
 ###### **Tasks**
 
-5. **GraphQL Integration**
+5. **GraphQL Integration** ✅
 
    - Set up GraphQL server (Async-GraphQL). ✅
-   - Add `validateEmail` query and `validateBulkEmails` mutation.
-   - **DoD**: GraphQL playground accessible, queries return correct responses.
+   - Add `validateEmail` query and `validateEmailsBulk` mutation. ✅
+   - **DoD**: GraphQL playground accessible, queries return correct responses. ✅
 
 6. **Redis Caching Layer**
 
