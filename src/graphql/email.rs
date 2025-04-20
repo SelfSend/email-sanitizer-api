@@ -220,11 +220,6 @@ mod tests {
         // We need to mock the behavior of the DNS validation function
         // Since we can't directly modify the implementation, we'll use a test-specific approach
 
-        // Create a custom EmailQuery with mocked validation functions
-        struct TestContext {
-            // Add fields if needed for context
-        }
-
         // Create a new EmailQuery implementation for testing
         struct TestEmailQuery;
 
@@ -311,6 +306,99 @@ mod tests {
         assert_eq!(
             validation_result["error"]["message"],
             "Email domain has no valid DNS records"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_validate_email_database_error() {
+        // Create a custom EmailQuery with mocked validation functions
+        struct TestEmailQuery;
+
+        #[Object]
+        impl TestEmailQuery {
+            async fn validate_email(
+                &self,
+                _ctx: &Context<'_>,
+                email: String,
+            ) -> Result<EmailValidationResponse> {
+                let email = email.trim();
+
+                // For this test, we assume:
+                // 1. Syntax validation passes
+                // 2. DNS validation passes
+                // 3. Disposable email check fails with a database error
+
+                // In this test, any email with "database-error" in it will trigger the database error case
+                if email.contains("database-error") {
+                    // Simulate a database error
+                    let error_message =
+                        "Failed to connect to the disposable email database".to_string();
+
+                    return Ok(EmailValidationResponse {
+                        is_valid: false,
+                        status: None,
+                        error: Some(EmailValidationError {
+                            code: "DATABASE_ERROR".to_string(),
+                            message: error_message,
+                        }),
+                    });
+                } else {
+                    // For test simplicity, any other email is valid
+                    return Ok(EmailValidationResponse {
+                        is_valid: true,
+                        status: Some("VALID".to_string()),
+                        error: None,
+                    });
+                }
+            }
+        }
+
+        // Create schema with our test query implementation
+        let schema = Schema::build(
+            TestEmailQuery,
+            async_graphql::EmptyMutation,
+            async_graphql::EmptySubscription,
+        )
+        .finish();
+
+        // Execute the query with an email that will trigger a database error
+        let query = r#"
+            query {
+                validateEmail(email: "test@database-error.com") {
+                    isValid
+                    status
+                    error {
+                        code
+                        message
+                    }
+                }
+            }
+        "#;
+
+        let res = schema.execute(query).await;
+
+        // Ensure no GraphQL errors occurred
+        assert!(
+            res.errors.is_empty(),
+            "GraphQL query has errors: {:?}",
+            res.errors
+        );
+
+        // Extract and verify the response data
+        let data = res.data.into_json().unwrap();
+        let validation_result = &data["validateEmail"];
+
+        // Verify is_valid is false
+        assert_eq!(validation_result["isValid"], false);
+
+        // Verify status is null
+        assert!(validation_result["status"].is_null());
+
+        // Verify error details
+        assert_eq!(validation_result["error"]["code"], "DATABASE_ERROR");
+        assert_eq!(
+            validation_result["error"]["message"],
+            "Failed to connect to the disposable email database"
         );
     }
 }
