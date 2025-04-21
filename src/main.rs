@@ -1,6 +1,7 @@
 use actix_web::{App, HttpServer, web::Data};
 use email_sanitizer::graphql::schema::create_schema;
 use email_sanitizer::openapi::ApiDoc;
+use email_sanitizer::routes::email::RedisCache;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -8,21 +9,36 @@ use utoipa_swagger_ui::SwaggerUi;
 ///
 /// Configures and launches the Actix-web HTTP server with:
 /// - GraphQL endpoint powered by Async-GraphQL
+/// - REST endpoints for email validation with Redis caching
 /// - Swagger UI for API documentation
 /// - Environment configuration via `.env` file
-/// - Shared application state for schema and OpenAPI docs
+/// - Shared application state for schema, Redis cache, and OpenAPI docs
 ///
 /// # Endpoints
 /// - GraphQL: `/api/v1/graphql` (configured in routes)
+/// - Email validation: `/api/v1/validate-email`
 /// - Swagger UI: `/swagger-ui/`
 /// - OpenAPI spec: `/api-docs/openapi.json`
 ///
 /// # Configuration
 /// - Server binds to `127.0.0.1:8080` by default
 /// - Environment variables loaded from `.env` file (if present)
+/// - Redis URL from REDIS_URL environment variable (defaults to localhost:6379)
+/// - Redis cache TTL from REDIS_CACHE_TTL environment variable (defaults to 86400 seconds/24 hours)
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
+
+    // Initialize Redis cache
+    let redis_url =
+        std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".to_string());
+    let redis_ttl = std::env::var("REDIS_CACHE_TTL")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(86400); // Default 24 hours TTL
+
+    let redis_cache =
+        RedisCache::new(&redis_url, redis_ttl).expect("Failed to initialize Redis connection");
 
     // Create GraphQL schema
     let schema = create_schema();
@@ -33,6 +49,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(Data::new(openapi.clone()))
             .app_data(Data::new(schema.clone()))
+            .app_data(Data::new(redis_cache.clone()))
             .configure(email_sanitizer::routes::configure)
             .service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi))
     })
@@ -46,19 +63,31 @@ mod tests {
     use actix_web::{App, test, web::Data};
     use email_sanitizer::graphql::schema::create_schema;
     use email_sanitizer::openapi::ApiDoc;
+    use email_sanitizer::routes::email::RedisCache;
     use utoipa::OpenApi;
     use utoipa_swagger_ui::SwaggerUi;
+
+    // Helper function to create test Redis cache
+    fn create_test_redis_cache() -> RedisCache {
+        let redis_url = std::env::var("TEST_REDIS_URL")
+            .unwrap_or_else(|_| "redis://127.0.0.1:6379".to_string());
+
+        RedisCache::new(&redis_url, 3600) // 1 hour TTL for tests
+            .expect("Failed to initialize test Redis connection")
+    }
 
     #[actix_web::test]
     async fn test_server_configuration() {
         // Create the app with the same configuration as in main()
         let schema = create_schema();
         let openapi = ApiDoc::openapi();
+        let redis_cache = create_test_redis_cache();
 
         let _app = test::init_service(
             App::new()
                 .app_data(Data::new(openapi.clone()))
                 .app_data(Data::new(schema.clone()))
+                .app_data(Data::new(redis_cache.clone()))
                 .configure(email_sanitizer::routes::configure)
                 .service(
                     SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi),
@@ -74,11 +103,13 @@ mod tests {
         // Set up test app with the same configuration as in main()
         let schema = create_schema();
         let openapi = ApiDoc::openapi();
+        let redis_cache = create_test_redis_cache();
 
         let app = test::init_service(
             App::new()
                 .app_data(Data::new(openapi.clone()))
                 .app_data(Data::new(schema.clone()))
+                .app_data(Data::new(redis_cache.clone()))
                 .configure(email_sanitizer::routes::configure)
                 .service(
                     SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi),
@@ -114,11 +145,13 @@ mod tests {
         // Set up test app with the same configuration as in main()
         let schema = create_schema();
         let openapi = ApiDoc::openapi();
+        let redis_cache = create_test_redis_cache();
 
         let app = test::init_service(
             App::new()
                 .app_data(Data::new(openapi.clone()))
                 .app_data(Data::new(schema.clone()))
+                .app_data(Data::new(redis_cache.clone()))
                 .configure(email_sanitizer::routes::configure)
                 .service(
                     SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi),
@@ -157,11 +190,13 @@ mod tests {
         // Set up test app with the same configuration as in main()
         let schema = create_schema();
         let openapi = ApiDoc::openapi();
+        let redis_cache = create_test_redis_cache();
 
         let app = test::init_service(
             App::new()
                 .app_data(Data::new(openapi.clone()))
                 .app_data(Data::new(schema.clone()))
+                .app_data(Data::new(redis_cache.clone()))
                 .configure(email_sanitizer::routes::configure)
                 .service(
                     SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi),
@@ -193,11 +228,13 @@ mod tests {
         // Set up test app with the same configuration as in main()
         let schema = create_schema();
         let openapi = ApiDoc::openapi();
+        let redis_cache = create_test_redis_cache();
 
         let app = test::init_service(
             App::new()
                 .app_data(Data::new(openapi.clone()))
                 .app_data(Data::new(schema.clone()))
+                .app_data(Data::new(redis_cache.clone()))
                 .configure(email_sanitizer::routes::configure)
                 .service(
                     SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi),
@@ -239,11 +276,13 @@ mod tests {
         // Set up test app with the same configuration as in main()
         let schema = create_schema();
         let openapi = ApiDoc::openapi();
+        let redis_cache = create_test_redis_cache();
 
         let app = test::init_service(
             App::new()
                 .app_data(Data::new(openapi.clone()))
                 .app_data(Data::new(schema.clone()))
+                .app_data(Data::new(redis_cache.clone()))
                 .configure(email_sanitizer::routes::configure)
                 .service(
                     SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi),
@@ -279,4 +318,97 @@ mod tests {
             "Health response should include a timestamp"
         );
     }
+
+    /* Dummy RedisCache for fallback in tests
+    fn test_dummy() -> RedisCache {
+        // You may want to implement a mock or in-memory version for real tests
+        RedisCache::new("redis://127.0.0.1:6379", 1).expect("Failed to create dummy RedisCache")
+    }
+    // #[actix_web::test]
+    async fn test_email_validation_endpoint() {
+        // Set up test app with the same configuration as in main()
+        let schema = create_schema();
+        let openapi = ApiDoc::openapi();
+
+        // Use test_dummy() directly to avoid Redis connection issues
+        let redis_cache = test_dummy();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(Data::new(openapi.clone()))
+                .app_data(Data::new(schema.clone()))
+                .app_data(Data::new(redis_cache.clone()))
+                .configure(email_sanitizer::routes::configure)
+                .service(
+                    SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi),
+                ),
+        )
+        .await;
+
+        // Test cases
+        let test_cases = vec![
+            // Valid email - should return 200 or 400 depending on DNS checks
+            (
+                serde_json::json!({"email": "test@example.com"}),
+                vec![200, 400],
+                "Valid email format",
+            ),
+            // Invalid email syntax - should return 400
+            (
+                serde_json::json!({"email": "invalid-email"}),
+                vec![400],
+                "Invalid email syntax",
+            ),
+            // Empty email - should return 400
+            (serde_json::json!({"email": ""}), vec![400], "Empty email"),
+            // Missing email field - should return 400
+            (serde_json::json!({}), vec![400], "Missing email field"),
+            // Invalid JSON - should return 400
+            (
+                serde_json::json!({"wrong_field": "test@example.com"}),
+                vec![400],
+                "Wrong JSON field",
+            ),
+        ];
+
+        for (payload, expected_status_codes, test_name) in test_cases {
+            let req = test::TestRequest::post()
+                .uri("/api/v1/validate-email")
+                .insert_header(("content-type", "application/json"))
+                .set_json(payload)
+                .to_request();
+
+            let resp = test::call_service(&app, req).await;
+            let status = resp.status().as_u16();
+
+            if status == 500 {
+                let body = test::read_body(resp).await;
+                let body_str = std::str::from_utf8(&body).unwrap_or("Invalid UTF-8");
+                panic!(
+                    "{}: Expected status codes {:?}, got 500. Response body: {}",
+                    test_name, expected_status_codes, body_str
+                );
+            }
+
+            assert!(
+                expected_status_codes.contains(&status),
+                "{}: Expected status codes {:?}, got {}",
+                test_name,
+                expected_status_codes,
+                status
+            );
+
+            // Additional validation for successful responses
+            if status == 200 {
+                let body = test::read_body(resp).await;
+                let json: serde_json::Value =
+                    serde_json::from_slice(&body).expect("Response should be valid JSON");
+
+                assert!(
+                    json.get("message").is_some(),
+                    "Success response should contain 'message' field"
+                );
+            }
+        }
+    } */
 }
