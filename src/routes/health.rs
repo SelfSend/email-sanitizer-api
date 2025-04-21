@@ -1,5 +1,5 @@
 use crate::models::health::HealthResponse;
-use actix_web::{HttpResponse, Responder, get};
+use actix_web::{HttpResponse, Responder, get, guard, web};
 
 /// # Health Check Endpoint
 ///
@@ -39,7 +39,13 @@ pub async fn health() -> impl Responder {
 ///
 /// - `GET /health`: Health check endpoint
 pub fn configure_routes(cfg: &mut actix_web::web::ServiceConfig) {
-    cfg.service(health);
+    // Add default route guard for unsupported methods
+    cfg.service(
+        web::resource("/health")
+            .guard(guard::Not(guard::Get()))
+            .to(HttpResponse::MethodNotAllowed),
+    )
+    .service(health);
 }
 
 #[cfg(test)]
