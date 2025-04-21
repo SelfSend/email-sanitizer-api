@@ -49,7 +49,14 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 mod tests {
     use super::*;
     use crate::routes::email::RedisCache;
-    use actix_web::{App, Error, body::to_bytes, dev::Service, http::StatusCode, test, web::Data};
+    use actix_web::{
+        App, Error,
+        body::to_bytes,
+        dev::Service,
+        http::{StatusCode, header},
+        test,
+        web::Data,
+    };
     use serde_json::json;
 
     impl RedisCache {
@@ -71,23 +78,27 @@ mod tests {
         })
     }
 
-    /// Comprehensive route integration tests
-    ///
-    /// Validates:
-    /// - Correct route mounting under /api/v1 scope
-    /// - Endpoint response status codes
-    /// - Response body structures
-    /// - Error handling for invalid requests
-    /// - Scope isolation preventing route leakage
+    /// Tests the basic API structure configuration
+    /// Ensures the routes are properly configured in the service config
     #[actix_web::test]
-    async fn test_api_v1_scope() -> Result<(), Error> {
-        // Create Redis cache for testing
-        let redis_cache = create_test_redis_cache();
+    async fn test_api_configuration() {
+        // Create a simple test app with our route configuration
+        let _app = test::init_service(
+            App::new()
+                .app_data(Data::new(create_test_redis_cache()))
+                .configure(configure),
+        )
+        .await;
 
-        // Initialize app with Redis cache data
+        // App should build successfully (if we reach here, it's successful)
+    }
+
+    /// Test that health endpoint responds correctly
+    #[actix_web::test]
+    async fn test_health_endpoint() -> Result<(), Error> {
         let app = test::init_service(
             App::new()
-                .app_data(Data::new(redis_cache))
+                .app_data(Data::new(create_test_redis_cache()))
                 .configure(configure),
         )
         .await;
@@ -102,6 +113,19 @@ mod tests {
         let health_response: serde_json::Value = serde_json::from_slice(&body)?;
         assert_eq!(health_response["status"], "UP");
         assert!(health_response["timestamp"].as_str().is_some());
+
+        Ok(())
+    }
+
+    /// Test email validation endpoints
+    #[actix_web::test]
+    async fn test_email_validation_endpoints() -> Result<(), Error> {
+        let app = test::init_service(
+            App::new()
+                .app_data(Data::new(create_test_redis_cache()))
+                .configure(configure),
+        )
+        .await;
 
         // Test valid email validation request
         let valid_req = test::TestRequest::post()
@@ -148,6 +172,63 @@ mod tests {
         let empty_body_resp = app.call(empty_body_req).await?;
         assert_eq!(empty_body_resp.status(), StatusCode::BAD_REQUEST);
 
+        // Test malformed JSON body
+        let malformed_req = test::TestRequest::post()
+            .uri("/api/v1/validate-email")
+            .insert_header((header::CONTENT_TYPE, "application/json"))
+            .set_payload("{invalid_json:}") // Deliberately malformed
+            .to_request();
+        let malformed_resp = app.call(malformed_req).await?;
+        assert_eq!(malformed_resp.status(), StatusCode::BAD_REQUEST);
+
+        Ok(())
+    }
+
+    /// Test GraphQL related endpoints
+    #[actix_web::test]
+    async fn test_graphql_endpoints() -> Result<(), Error> {
+        let app = test::init_service(
+            App::new()
+                .app_data(Data::new(create_test_redis_cache()))
+                .configure(configure),
+        )
+        .await;
+
+        // Test GraphQL endpoint exists
+        let graphql_req = test::TestRequest::post()
+            .uri("/api/v1/graphql")
+            .set_json(json!({
+                "query": "{ __schema { types { name } } }"
+            }))
+            .to_request();
+        let graphql_resp = app.call(graphql_req).await?;
+
+        // We don't assert the exact response because GraphQL might not be fully initialized in tests
+        // but we can at least verify the endpoint exists and doesn't return 404
+        assert_ne!(graphql_resp.status(), StatusCode::NOT_FOUND);
+
+        // Test GraphQL playground endpoint (should return HTML)
+        let playground_req = test::TestRequest::get()
+            .uri("/api/v1/playground")
+            .to_request();
+        let playground_resp = app.call(playground_req).await?;
+
+        // We should at least get some response, not a 404
+        assert_ne!(playground_resp.status(), StatusCode::NOT_FOUND);
+
+        Ok(())
+    }
+
+    /// Test API versioning and scope isolation
+    #[actix_web::test]
+    async fn test_api_versioning_and_scope() -> Result<(), Error> {
+        let app = test::init_service(
+            App::new()
+                .app_data(Data::new(create_test_redis_cache()))
+                .configure(configure),
+        )
+        .await;
+
         // Test non-existent endpoint within scope
         let req = test::TestRequest::get()
             .uri("/api/v1/nonexistent")
@@ -159,6 +240,65 @@ mod tests {
         let req = test::TestRequest::get().uri("/health").to_request();
         let resp = app.call(req).await?;
         assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+        // Verify scope isolation - health endpoint shouldn't exist in different version
+        let req = test::TestRequest::get().uri("/api/v2/health").to_request();
+        let resp = app.call(req).await?;
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+        // Test method not allowed
+        let req = test::TestRequest::post().uri("/api/v1/health").to_request();
+        let resp = app.call(req).await?;
+        assert_eq!(resp.status(), StatusCode::METHOD_NOT_ALLOWED);
+
+        Ok(())
+    }
+
+    /// Comprehensive integration test covering all API aspects
+    /// Validates the entire route structure works together
+    #[actix_web::test]
+    async fn test_api_v1_integration() -> Result<(), Error> {
+        // Create Redis cache for testing
+        let redis_cache = create_test_redis_cache();
+
+        // Initialize app with Redis cache data
+        let app = test::init_service(
+            App::new()
+                .app_data(Data::new(redis_cache))
+                .configure(configure),
+        )
+        .await;
+
+        // Test each main endpoint exists and returns expected status codes
+
+        // Health check
+        let health_req = test::TestRequest::get().uri("/api/v1/health").to_request();
+        let health_resp = app.call(health_req).await?;
+        assert_eq!(health_resp.status(), StatusCode::OK);
+
+        // Email validation (minimal test)
+        let email_req = test::TestRequest::post()
+            .uri("/api/v1/validate-email")
+            .set_json(json!({ "email": "somebody@example.org" }))
+            .to_request();
+        let email_resp = app.call(email_req).await?;
+        // Not asserting specific status due to potential DNS issues in test environment
+        assert!(email_resp.status() != StatusCode::NOT_FOUND);
+
+        // GraphQL endpoint
+        let graphql_req = test::TestRequest::post()
+            .uri("/api/v1/graphql")
+            .set_json(json!({ "query": "{__typename}" }))
+            .to_request();
+        let graphql_resp = app.call(graphql_req).await?;
+        assert_ne!(graphql_resp.status(), StatusCode::NOT_FOUND);
+
+        // GraphQL playground
+        let playground_req = test::TestRequest::get()
+            .uri("/api/v1/playground")
+            .to_request();
+        let playground_resp = app.call(playground_req).await?;
+        assert_ne!(playground_resp.status(), StatusCode::NOT_FOUND);
 
         Ok(())
     }
