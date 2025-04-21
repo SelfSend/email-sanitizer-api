@@ -176,7 +176,7 @@ MIT License.
 
 7. **Disposable & Role-Based Email Detection**
 
-   - Integrate blocklists for disposable emails.
+   - Integrate blocklists for disposable emails. ✅
    - Detect role-based addresses (e.g., `admin@`, `support@`).
    - **DoD**: Blocklists loaded at startup, role detection accuracy >95%.
 
@@ -199,8 +199,8 @@ MIT License.
 
 10. **Rate Limiting**
 
-- Implement Redis-based rate limiting (per API key).
-- **DoD**: Rejects requests beyond 10 reqs/sec, logs violations.
+   - Implement Redis-based rate limiting (per API key).
+   - **DoD**: Rejects requests beyond 10 reqs/sec, logs violations.
 
 11. **Monitoring & Logging**
 
