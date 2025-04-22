@@ -30,7 +30,22 @@ pub type AppSchema = Schema<RootQuery, EmptyMutation, EmptySubscription>;
 /// let schema = create_schema();
 /// ```
 pub fn create_schema() -> AppSchema {
-    Schema::build(RootQuery::default(), EmptyMutation, EmptySubscription).finish()
+    let redis_url =
+        std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".to_string());
+
+    let cache_ttl = std::env::var("EMAIL_CACHE_TTL")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(86400); // 24 hours default
+
+    let email_query = EmailQuery::new(&redis_url, cache_ttl).unwrap_or_default(); // Fallback to non-caching if Redis connection fails
+
+    Schema::build(
+        RootQuery(HealthQuery, email_query),
+        EmptyMutation,
+        EmptySubscription,
+    )
+    .finish()
 }
 
 #[cfg(test)]
