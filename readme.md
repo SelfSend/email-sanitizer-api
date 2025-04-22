@@ -93,11 +93,14 @@ Checks among a list of 106,543 disposable email domains, the largest database of
 Configure your `.env` file:
 
 ```bash
-  PORT=3000
-  DATABASE_URL=mongodb://xxxx
-  REDIS_URL=redis://localhost:6379
-  JWT_SECRET=your_secure_secret
-  API_RATE_LIMIT=100
+MONGODB_URI=mongodb+srv://<<username>>:<<password>>@clusterX.*****.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0 # mongodb://192.168.8.136:27017 on local
+DB_NAME_TEST=selfsend_test
+DB_NAME_PRODUCTION=selfsend_production
+DB_DISPOSABLE_EMAILS_COLLECTION=disposable_email_domains
+
+# Redis
+REDIS_URL=redis://127.0.0.1:6379
+REDIS_CACHE_TTL=86400 # 1 day in seconds
 ```
 
 ### 🏗️ Running the Server
@@ -170,7 +173,7 @@ MIT License.
 
 6. **Redis Caching Layer**
 
-   - Cache DNS/MX results to reduce latency.
+   - Cache DNS/MX results to reduce latency. ✅
    - Implement TTL for cached entries.
    - **DoD**: Cached responses are 50% faster than uncached ones.
 
@@ -199,8 +202,8 @@ MIT License.
 
 10. **Rate Limiting**
 
-   - Implement Redis-based rate limiting (per API key).
-   - **DoD**: Rejects requests beyond 10 reqs/sec, logs violations.
+    - Implement Redis-based rate limiting (per API key).
+    - **DoD**: Rejects requests beyond 10 reqs/sec, logs violations.
 
 11. **Monitoring & Logging**
 
