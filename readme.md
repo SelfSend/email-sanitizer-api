@@ -171,11 +171,11 @@ MIT License.
    - Add `validateEmail` query and `validateEmailsBulk` mutation. ✅
    - **DoD**: GraphQL playground accessible, queries return correct responses. ✅
 
-6. **Redis Caching Layer**
+6. **Redis Caching Layer** ✅
 
    - Cache DNS/MX results to reduce latency. ✅
-   - Implement TTL for cached entries.
-   - **DoD**: Cached responses are 50% faster than uncached ones.
+   - Implement TTL for cached entries. ✅
+   - **DoD**: Cached responses are 50% faster than uncached ones. ✅
 
 7. **Disposable & Role-Based Email Detection**
 
