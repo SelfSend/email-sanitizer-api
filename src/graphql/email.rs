@@ -1,6 +1,9 @@
 use crate::handlers::validation::{disposable, dnsmx, syntax};
 use async_graphql::{Context, Object, Result, SimpleObject};
 use futures::future::join_all;
+use redis::{Client, Commands, RedisError};
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 /// Represents the possible validation errors for an email address
 ///
@@ -9,7 +12,7 @@ use futures::future::join_all;
 /// - `INVALID_DOMAIN`: The domain does not have valid DNS/MX records
 /// - `DISPOSABLE_EMAIL`: The email comes from a disposable email provider
 /// - `DATABASE_ERROR`: Could not check disposable email database
-#[derive(SimpleObject, Clone)]
+#[derive(SimpleObject, Clone, Serialize, Deserialize)]
 pub struct EmailValidationError {
     /// Error code: INVALID_SYNTAX, INVALID_DOMAIN, DISPOSABLE_EMAIL, or DATABASE_ERROR
     pub code: String,
@@ -18,7 +21,7 @@ pub struct EmailValidationError {
 }
 
 /// Response object for email validation containing either valid status or error details
-#[derive(SimpleObject)]
+#[derive(SimpleObject, Clone, Serialize, Deserialize)]
 pub struct EmailValidationResponse {
     /// Whether the email is valid
     pub is_valid: bool,
@@ -48,24 +51,85 @@ pub struct BulkEmailValidationResponse {
     pub invalid_count: i32,
 }
 
+/// Serializable version of the validation response
+#[derive(Serialize, Deserialize)]
+struct CachedValidationResponse {
+    is_valid: bool,
+    status: Option<String>,
+    error: Option<EmailValidationError>,
+}
+
+impl From<CachedValidationResponse> for EmailValidationResponse {
+    fn from(cached: CachedValidationResponse) -> Self {
+        EmailValidationResponse {
+            is_valid: cached.is_valid,
+            status: cached.status,
+            error: cached.error,
+        }
+    }
+}
+
+impl From<EmailValidationResponse> for CachedValidationResponse {
+    fn from(resp: EmailValidationResponse) -> Self {
+        CachedValidationResponse {
+            is_valid: resp.is_valid,
+            status: resp.status,
+            error: resp.error,
+        }
+    }
+}
+
 /// Email validation query operations
 #[derive(Default)]
-pub struct EmailQuery;
+pub struct EmailQuery {
+    redis_client: Option<Arc<Client>>,
+    cache_ttl: u64,
+}
+
+impl EmailQuery {
+    pub fn new(redis_url: &str, cache_ttl: u64) -> Result<Self, RedisError> {
+        let client = Client::open(redis_url)?;
+        Ok(Self {
+            redis_client: Some(Arc::new(client)),
+            cache_ttl,
+        })
+    }
+
+    async fn get_cached_result(&self, email: &str) -> Option<EmailValidationResponse> {
+        if let Some(client) = &self.redis_client {
+            let mut conn = client.get_connection().ok()?;
+            let cache_key = format!("email:validation:{}", email);
+
+            let cached: Option<String> = conn.get(&cache_key).ok();
+
+            if let Some(cached_str) = cached {
+                if let Ok(cached_response) =
+                    serde_json::from_str::<CachedValidationResponse>(&cached_str)
+                {
+                    return Some(cached_response.into());
+                }
+            }
+        }
+        None
+    }
+
+    async fn cache_result(&self, email: &str, result: &EmailValidationResponse) {
+        if let Some(client) = &self.redis_client {
+            if let Ok(mut conn) = client.get_connection() {
+                let cache_key = format!("email:validation:{}", email);
+                let cached_response: CachedValidationResponse = (*result).clone().into();
+
+                if let Ok(json) = serde_json::to_string(&cached_response) {
+                    let _: Result<(), RedisError> =
+                        conn.set_ex(&cache_key, json, self.cache_ttl as usize);
+                }
+            }
+        }
+    }
+}
 
 #[Object]
 impl EmailQuery {
-    /// Validates an email address through multiple checks:
-    /// 1. RFC 5322 compliant syntax validation
-    /// 2. Domain DNS/MX record verification
-    /// 3. Disposable email provider database check
-    ///
-    /// # Arguments
-    /// * `email` - The email address to validate (will be trimmed automatically)
-    ///
-    /// # Returns
-    /// [`EmailValidationResponse`] containing either:
-    /// - Validation success status ("VALID") with no errors, or
-    /// - Detailed error information for failed checks
     async fn validate_email(
         &self,
         _ctx: &Context<'_>,
@@ -73,8 +137,32 @@ impl EmailQuery {
     ) -> Result<EmailValidationResponse> {
         let email = email.trim();
 
+        // Try to get cached result first
+        if let Some(cached) = self.get_cached_result(email).await {
+            return Ok(cached);
+        }
+
+        // If not in cache, perform validation
+        let validation_result = self.perform_validation(_ctx, email.to_string()).await?;
+
+        // Cache the result if it's valid or has a permanent error (like invalid syntax)
+        if validation_result.is_valid
+            || validation_result
+                .error
+                .as_ref()
+                .map(|e| e.code != "DATABASE_ERROR")
+                .unwrap_or(false)
+        {
+            self.cache_result(email, &validation_result).await;
+        }
+
+        Ok(validation_result)
+    }
+
+    // Move the validation logic to a separate method
+    async fn perform_validation(&self, email: String) -> Result<EmailValidationResponse> {
         // 1. Syntax validation
-        if !syntax::is_valid_email(email) {
+        if !syntax::is_valid_email(&email) {
             return Ok(EmailValidationResponse {
                 is_valid: false,
                 status: None,
@@ -86,7 +174,7 @@ impl EmailQuery {
         }
 
         // 2. DNS/MX validation (blocking task)
-        let email_clone = email.to_owned();
+        let email_clone = email.clone();
         let dns_valid =
             tokio::task::spawn_blocking(move || dnsmx::validate_email_dns(&email_clone))
                 .await
@@ -104,7 +192,7 @@ impl EmailQuery {
         }
 
         // 3. Disposable email check
-        match disposable::is_disposable_email(email).await {
+        match disposable::is_disposable_email(&email).await {
             Ok(true) => Ok(EmailValidationResponse {
                 is_valid: false,
                 status: None,
@@ -715,5 +803,62 @@ mod tests {
             invalid_result["validation"]["error"]["code"],
             "INVALID_SYNTAX"
         );
+    }
+
+    #[tokio::test]
+    async fn test_email_validation_caching() {
+        // Create a test Redis client with a short TTL
+        let email_query = EmailQuery::new("redis://127.0.0.1:6379", 5).unwrap();
+
+        let test_email = "test@example.com";
+
+        // First validation - should not be cached
+        let schema = Schema::build(
+            EmailQuery::default(),
+            async_graphql::EmptyMutation,
+            async_graphql::EmptySubscription,
+        )
+        .finish();
+
+        // Create a dummy request to get a Context
+        let request = async_graphql::Request::new("{ __typename }");
+        let _ctx = schema.execute(request).await;
+
+        // The context is not directly accessible, but since our implementation does not use it,
+        // we can pass a reference to a Context created from a new QueryBuilder.
+
+        let schema = Schema::build(
+            email_query,
+            async_graphql::EmptyMutation,
+            async_graphql::EmptySubscription,
+        )
+        .finish();
+
+        let query = format!(
+            r#"
+            query {{
+                validateEmail(email: "{}") {{
+                    isValid
+                    status
+                    error {{
+                        code
+                        message
+                    }}
+                }}
+            }}
+            "#,
+            test_email
+        );
+
+        let res1 = schema.execute(&query).await;
+        let res2 = schema.execute(&query).await;
+        let res3 = schema.execute(&query).await;
+
+        let data1 = res1.data.into_json().unwrap();
+        let data2 = res2.data.into_json().unwrap();
+        let data3 = res3.data.into_json().unwrap();
+
+        assert_eq!(data1, data2);
+        assert_eq!(data1, data3);
     }
 }
