@@ -58,6 +58,14 @@ Follows RFC specifications by checking A/AAAA records if MX records are missing.
 
 Checks among a list of 106,543 disposable email domains, the largest database of disposable emails out there, updated daily.
 
+### Optional Role-Based Alias Detection and Validation
+
+Identify and flag role-based email aliases (e.g., `admin@`, `support@`, `info@`) to prevent generic addresses from entering your system. This helps maintain high engagement rates and reduces the risk of emails being marked as spam.
+
+- **Detection of Common Role Prefixes**: Checks for 50+ predefined role-based terms in the local-part (e.g., `admin`, `sales`, `contact`).
+
+This feature is **optional** and can be enabled/disabled based on your requirements.
+
 ## 🛠 Tech Stack
 
 | Category       | Tools                                   |
