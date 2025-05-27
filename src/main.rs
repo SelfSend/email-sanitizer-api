@@ -2,6 +2,7 @@ use actix_web::{App, HttpServer, web::Data};
 use email_sanitizer::graphql::schema::create_schema;
 use email_sanitizer::openapi::ApiDoc;
 use email_sanitizer::routes::email::RedisCache;
+use std::env::VarError;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -21,7 +22,7 @@ use utoipa_swagger_ui::SwaggerUi;
 /// - OpenAPI spec: `/api-docs/openapi.json`
 ///
 /// # Configuration
-/// - Server binds to `127.0.0.1:8080` by default
+/// - Server binds to `127.0.0.1:8080` by default. Port can be specified as an env variable named "PORT".
 /// - Environment variables loaded from `.env` file (if present)
 /// - Redis URL from REDIS_URL environment variable (defaults to localhost:6379)
 /// - Redis cache TTL from REDIS_CACHE_TTL environment variable (defaults to 86400 seconds/24 hours)
@@ -43,6 +44,18 @@ async fn main() -> std::io::Result<()> {
     // Create GraphQL schema
     let schema = create_schema();
 
+    let port: Result<String, VarError> = std::env::var("PORT");
+    let port = match port {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!(
+                "Error reading PORT environment variable: {}, binding to 8080",
+                e
+            );
+            "8080".to_string()
+        }
+    };
+
     HttpServer::new(move || {
         let openapi = ApiDoc::openapi();
 
@@ -53,7 +66,10 @@ async fn main() -> std::io::Result<()> {
             .configure(email_sanitizer::routes::configure)
             .service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi))
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind((
+        "127.0.0.1",
+        port.parse::<u16>().expect("Failed to parse port"),
+    ))?
     .run()
     .await
 }
