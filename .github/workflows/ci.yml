@@ -27,8 +27,11 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Build Project
+      - name: Build Project (Debug)
         run: cargo build --verbose
+
+      - name: Build Project (Release)
+        run: cargo build --release --verbose
 
       - name: Run Tests with Coverage
         run: |

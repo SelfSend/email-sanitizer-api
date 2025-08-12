@@ -102,19 +102,20 @@ impl EmailQuery {
 
             let cached: Option<String> = conn.get(&cache_key).ok();
 
-            if let Some(cached_str) = cached
-                && let Ok(cached_response) =
+            if let Some(cached_str) = cached {
+                if let Ok(cached_response) =
                     serde_json::from_str::<CachedValidationResponse>(&cached_str)
                 {
                     return Some(cached_response.into());
                 }
+            }
         }
         None
     }
 
     async fn cache_result(&self, email: &str, result: &EmailValidationResponse) {
-        if let Some(client) = &self.redis_client
-            && let Ok(mut conn) = client.get_connection() {
+        if let Some(client) = &self.redis_client {
+            if let Ok(mut conn) = client.get_connection() {
                 let cache_key = format!("email:validation:{}", email);
                 let cached_response: CachedValidationResponse = (*result).clone().into();
 
@@ -123,6 +124,7 @@ impl EmailQuery {
                         conn.set_ex(&cache_key, json, self.cache_ttl as usize);
                 }
             }
+        }
     }
 }
 
