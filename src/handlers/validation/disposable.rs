@@ -106,6 +106,9 @@ mod tests {
     /// Test invalid email format
     async fn test_invalid_email_format() {
         let result = is_disposable_email_mock("invalid-email").await;
-        assert!(result.is_err(), "Should return error for invalid email format");
+        assert!(
+            result.is_err(),
+            "Should return error for invalid email format"
+        );
     }
 }

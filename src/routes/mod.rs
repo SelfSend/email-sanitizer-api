@@ -59,8 +59,6 @@ mod tests {
     };
     use serde_json::json;
 
-
-
     /// Helper function to create test Redis cache
     fn create_test_redis_cache() -> RedisCache {
         // For tests, we'll use a mock that avoids actual Redis connections
