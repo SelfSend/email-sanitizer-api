@@ -59,12 +59,7 @@ mod tests {
     };
     use serde_json::json;
 
-    impl RedisCache {
-        // Special constructor for tests when Redis is unavailable
-        pub fn test_dummy() -> Self {
-            RedisCache::new("redis://127.0.0.1:6379", 3600).unwrap()
-        }
-    }
+
 
     /// Helper function to create test Redis cache
     fn create_test_redis_cache() -> RedisCache {

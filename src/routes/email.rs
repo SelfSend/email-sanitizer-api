@@ -28,7 +28,14 @@ impl RedisCache {
     }
 
     // For testing when Redis is unavailable
-    // test_dummy is defined elsewhere to avoid duplicate definitions
+    pub fn test_dummy() -> Self {
+        // Create a dummy Redis cache that doesn't actually connect
+        // This is used in tests when Redis is not available
+        Self {
+            client: Arc::new(Client::open("redis://127.0.0.1:6379").unwrap()),
+            ttl: 3600,
+        }
+    }
 
     // Get cached DNS validation result
     pub async fn get_dns_validation(

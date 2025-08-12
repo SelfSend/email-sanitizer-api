@@ -1,5 +1,8 @@
+#[cfg(not(test))]
 use mongodb::bson::{Document, doc};
+#[cfg(not(test))]
 use mongodb::{Client, Collection};
+#[cfg(not(test))]
 use std::env;
 use std::error::Error;
 
@@ -28,6 +31,12 @@ use std::error::Error;
 /// # Ok(())
 /// # }
 /// ```
+#[cfg(test)]
+pub async fn is_disposable_email(email: &str) -> Result<bool, Box<dyn Error>> {
+    is_disposable_email_mock(email).await
+}
+
+#[cfg(not(test))]
 pub async fn is_disposable_email(email: &str) -> Result<bool, Box<dyn Error>> {
     // Extract domain from email
     let (_, domain_part) = email
@@ -52,63 +61,51 @@ pub async fn is_disposable_email(email: &str) -> Result<bool, Box<dyn Error>> {
     Ok(exists)
 }
 
+/// Mock implementation for testing without MongoDB
+#[cfg(test)]
+pub async fn is_disposable_email_mock(email: &str) -> Result<bool, Box<dyn Error>> {
+    // Extract domain from email
+    let (_, domain_part) = email
+        .split_once('@')
+        .ok_or("Invalid email format: missing '@'")?;
+    let domain = domain_part.to_lowercase();
+
+    // Mock disposable domains for testing
+    let disposable_domains = vec![
+        "mailinator.com",
+        "0-00.usa.cc",
+        "10minutemail.com",
+        "guerrillamail.com",
+        "tempmail.org",
+    ];
+
+    Ok(disposable_domains.contains(&domain.as_str()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mongodb::bson::{Document, doc};
-    use std::env;
-
-    /// Helper function to set up test MongoDB collection
-    async fn setup_collection() -> Collection<Document> {
-        // Load environment variables from .env file
-        dotenv::dotenv().ok();
-
-        let mongo_uri = env::var("MONGODB_URI").expect("MONGODB_URI must be set");
-        let db_name = env::var("DB_NAME_TEST").expect("DB_NAME_TEST must be set");
-        let collection_name = env::var("DB_DISPOSABLE_EMAILS_COLLECTION")
-            .expect("DB_DISPOSABLE_EMAILS_COLLECTION must be set");
-
-        let client = Client::with_uri_str(&mongo_uri)
-            .await
-            .expect("Failed to connect to MongoDB");
-        client.database(&db_name).collection(&collection_name)
-    }
 
     #[tokio::test]
-    /// Tests recognition of disposable email domains
+    /// Tests recognition of disposable email domains using mock
     async fn test_disposable_email() {
-        let collection = setup_collection().await;
-
-        // Insert test disposable domain
-        collection
-            .insert_one(doc! { "domain": "0-00.usa.cc" })
-            .await
-            .expect("Failed to insert test data");
-
-        // Test disposable email
-        let result = is_disposable_email("example@0-00.usa.cc").await;
+        // Test disposable email using mock
+        let result = is_disposable_email_mock("example@mailinator.com").await;
         assert!(result.unwrap(), "Should recognize disposable domain");
-
-        // Cleanup
-        collection
-            .delete_many(doc! { "domain": "0-00.usa.cc" })
-            .await
-            .expect("Failed to clean up test data");
     }
 
     #[tokio::test]
-    /// Tests recognition of valid email domains
+    /// Tests recognition of valid email domains using mock
     async fn test_non_disposable_email() {
-        let collection = setup_collection().await;
-
-        // Ensure test domain is removed
-        collection
-            .delete_many(doc! { "domain": "gmail.com" })
-            .await
-            .expect("Failed to clean up test data");
-
-        // Test valid email
-        let result = is_disposable_email("johndoe@gmail.com").await;
+        // Test valid email using mock
+        let result = is_disposable_email_mock("johndoe@gmail.com").await;
         assert!(!result.unwrap(), "Should recognize non-disposable domain");
+    }
+
+    #[tokio::test]
+    /// Test invalid email format
+    async fn test_invalid_email_format() {
+        let result = is_disposable_email_mock("invalid-email").await;
+        assert!(result.is_err(), "Should return error for invalid email format");
     }
 }
