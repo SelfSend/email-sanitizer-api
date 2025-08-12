@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - MONGODB_URI=mongodb://mongodb:27017
+      - DB_NAME_PRODUCTION=selfsend_production
+      - DB_DISPOSABLE_EMAILS_COLLECTION=disposable_email_domains
+      - REDIS_URL=redis://redis:6379
+      - REDIS_CACHE_TTL=86400
+    depends_on:
+      - mongodb
+      - redis
+    restart: unless-stopped
+    networks:
+      - email-sanitizer-network
+
+  mongodb:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - email-sanitizer-network
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - email-sanitizer-network
+
+  nginx:
+    image: nginx:1.25
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - app
+    networks:
+      - email-sanitizer-network
+
+networks:
+  email-sanitizer-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  redis_data:

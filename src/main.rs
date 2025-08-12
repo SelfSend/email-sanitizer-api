@@ -67,7 +67,7 @@ async fn main() -> std::io::Result<()> {
             .service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi))
     })
     .bind((
-        "127.0.0.1",
+        "0.0.0.0",  // Changed from 127.0.0.1 to allow external connections
         port.parse::<u16>().expect("Failed to parse port"),
     ))?
     .run()
