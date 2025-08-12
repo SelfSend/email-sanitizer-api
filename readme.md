@@ -7,14 +7,14 @@
 
 A high-performance and secure REST/GraphQL API built with Rust, MongoDB & Redis for cleaning email subscriber lists. Maintains sender reputation by validating, deduplicating, and pruning inactive emails.
 
-## 🚀 Features
+## Features
 
 - **Scalable Architecture**: Built with Rust and optimized for horizontal scaling.
 - **Security First**: OAuth2/JWT authentication, rate limiting, and input validation.
 - **Observability**: Integrated logging, metrics, and distributed tracing.
 - **Multi-Protocol Support**: REST, GraphQL, or gRPC endpoints (choose as needed).
 
-## ✅ Validations
+## Validations
 
 Detect and handle invalid email addresses before they take some space in your database, cause delivery issues or harm your sender score.
 
@@ -58,7 +58,7 @@ Follows RFC specifications by checking A/AAAA records if MX records are missing.
 
 Checks among a list of 106,543 disposable email domains, the largest database of disposable emails out there, updated daily.
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Category       | Tools                                   |
 | -------------- | --------------------------------------- |
@@ -69,7 +69,7 @@ Checks among a list of 106,543 disposable email domains, the largest database of
 | **Auth**       | Auth0/Clerk/PASETO/OAuth2               |
 | **Monitoring** | Prometheus + Grafana, ELK Stack         |
 
-## 📦 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -88,7 +88,7 @@ Checks among a list of 106,543 disposable email domains, the largest database of
    cargo build
    ```
 
-### 🔧 Environment Setup
+### Environment Setup
 
 Configure your `.env` file:
 
@@ -103,7 +103,7 @@ REDIS_URL=redis://127.0.0.1:6379
 REDIS_CACHE_TTL=86400 # 1 day in seconds
 ```
 
-### 🏗️ Running the Server
+### Running the Server
 
 ```bash
 # Development (hot-reload)
@@ -113,7 +113,7 @@ cargo watch -x run
 cargo build --release
 ```
 
-### 🚨 Contributing
+### Contributing
 
 - Fork the repository.
 - Create a branch:
@@ -126,11 +126,11 @@ git checkout -b feat/issue-number-issue-name
 - Follow Conventional Commits.
 - Submit a PR with tests and documentation.
 
-### 📄 License
+### License
 
 MIT License.
 
-### 🌟 Future Roadmap
+### Future Roadmap
 
 ##### **Phase 1: Core Setup & Validation (Sprint 1-2)**
 
