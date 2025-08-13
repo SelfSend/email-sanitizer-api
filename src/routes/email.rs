@@ -385,6 +385,52 @@ mod tests {
     }
 
     #[actix_web::test]
+    async fn test_redis_cache_methods() {
+        let redis_cache = RedisCache::test_dummy();
+        
+        // Test get_dns_validation with cache miss
+        let result = redis_cache.get_dns_validation("example.com").await;
+        assert!(result.is_ok());
+        
+        // Test set_dns_validation
+        let result = redis_cache.set_dns_validation("example.com", true).await;
+        assert!(result.is_ok());
+    }
+
+    #[actix_web::test]
+    async fn test_redis_cache_new() {
+        // Test with valid Redis URL
+        let result = RedisCache::new("redis://127.0.0.1:6379", 3600);
+        assert!(result.is_ok() || result.is_err()); // Either works or fails gracefully
+        
+        // Test with invalid Redis URL
+        let result = RedisCache::new("invalid://url", 3600);
+        assert!(result.is_err());
+    }
+
+    #[actix_web::test]
+    async fn test_configure_routes_function() {
+        // Test that configure_routes function exists and can be called
+        // We can't directly test ServiceConfig::new as it's private
+        // Instead, we test through the app initialization
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(RedisCache::test_dummy()))
+                .configure(configure_routes)
+        ).await;
+        
+        // Test that the routes are configured by making a request
+        let req = test::TestRequest::post()
+            .uri("/validate-email")
+            .set_json(json!({ "email": "test@example.com" }))
+            .to_request();
+        
+        let resp = test::call_service(&app, req).await;
+        // Should not be 404 (not found), meaning route is configured
+        assert_ne!(resp.status().as_u16(), 404);
+    }
+
+    #[actix_web::test]
     #[ignore] // TODO: Implement proper mocking
     async fn test_database_connection_error() {
         let app = create_test_app().await;

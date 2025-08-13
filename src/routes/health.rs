@@ -79,4 +79,42 @@ mod tests {
         // Verify timestamp is present (more thorough validation in model tests)
         assert!(!health_response.timestamp.is_empty());
     }
+
+    #[actix_web::test]
+    async fn test_health_method_not_allowed() {
+        let app = test::init_service(App::new().configure(configure_routes)).await;
+
+        // Test POST method (should be method not allowed)
+        let req = test::TestRequest::post().uri("/health").to_request();
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), 405); // Method Not Allowed
+
+        // Test PUT method (should be method not allowed)
+        let req = test::TestRequest::put().uri("/health").to_request();
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), 405); // Method Not Allowed
+
+        // Test DELETE method (should be method not allowed)
+        let req = test::TestRequest::delete().uri("/health").to_request();
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), 405); // Method Not Allowed
+    }
+
+    #[actix_web::test]
+    async fn test_configure_routes_function() {
+        // Test that configure_routes function exists and can be called
+        // We test through the app initialization since ServiceConfig::new is private
+        let app = test::init_service(
+            App::new().configure(configure_routes)
+        ).await;
+        
+        // Test that the health route is configured by making a request
+        let req = test::TestRequest::get()
+            .uri("/health")
+            .to_request();
+        
+        let resp = test::call_service(&app, req).await;
+        // Should be 200 OK, meaning route is configured correctly
+        assert_eq!(resp.status().as_u16(), 200);
+    }
 }

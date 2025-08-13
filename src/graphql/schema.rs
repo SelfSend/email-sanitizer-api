@@ -123,4 +123,49 @@ mod tests {
         let data = result.data.into_json().unwrap();
         assert!(data["validateEmail"]["isValid"].is_boolean());
     }
+
+    #[test]
+    fn test_root_query_default() {
+        let root_query = RootQuery::default();
+        // Just ensure we can create a default instance
+        // This tests the Default trait implementation
+        let schema = Schema::build(root_query, EmptyMutation, EmptySubscription).finish();
+        
+        let query = "{ health { status } }";
+        let result = tokio_test::block_on(schema.execute(query));
+        assert!(result.errors.is_empty());
+    }
+
+    #[test]
+    fn test_bulk_email_validation_in_schema() {
+        let schema: AppSchema = create_schema();
+
+        let query = r#"
+            query {
+                validateEmailsBulk(emails: ["test1@example.com", "invalid-email"]) {
+                    results {
+                        email
+                        validation {
+                            isValid
+                            status
+                            error {
+                                code
+                                message
+                            }
+                        }
+                    }
+                    validCount
+                    invalidCount
+                }
+            }
+        "#;
+
+        let result = tokio_test::block_on(schema.execute(query));
+        assert!(result.errors.is_empty(), "GraphQL query has errors: {:?}", result.errors);
+
+        let data = result.data.into_json().unwrap();
+        assert!(data["validateEmailsBulk"]["results"].is_array());
+        assert!(data["validateEmailsBulk"]["validCount"].is_number());
+        assert!(data["validateEmailsBulk"]["invalidCount"].is_number());
+    }
 }
