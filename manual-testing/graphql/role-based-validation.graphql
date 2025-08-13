@@ -1,0 +1,49 @@
+# GraphQL Email Validation with Role-Based Check
+
+# Test 1: Validate email without role-based check (default behavior)
+query ValidateEmailDefault {
+  validateEmail(email: "admin@example.com") {
+    isValid
+    status
+    error {
+      code
+      message
+    }
+  }
+}
+
+# Test 2: Validate email with role-based check enabled
+query ValidateEmailWithRoleCheck {
+  validateEmail(email: "admin@example.com", checkRoleBased: true) {
+    isValid
+    status
+    error {
+      code
+      message
+    }
+  }
+}
+
+# Test 3: Validate non-role-based email with role check enabled
+query ValidateNormalEmailWithRoleCheck {
+  validateEmail(email: "user@example.com", checkRoleBased: true) {
+    isValid
+    status
+    error {
+      code
+      message
+    }
+  }
+}
+
+# Test 4: Validate invalid syntax email
+query ValidateInvalidSyntax {
+  validateEmail(email: "invalid-email") {
+    isValid
+    status
+    error {
+      code
+      message
+    }
+  }
+}

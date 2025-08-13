@@ -1,4 +1,4 @@
-use crate::handlers::validation::{disposable, dnsmx, syntax};
+use crate::handlers::validation::{disposable, dnsmx, role_based, syntax};
 use async_graphql::{Context, Object, Result, SimpleObject};
 use futures::future::join_all;
 use redis::{Client, Commands, RedisError};
@@ -10,11 +10,12 @@ use std::sync::Arc;
 /// Each error corresponds to a specific validation failure:
 /// - `INVALID_SYNTAX`: The email format is not RFC-compliant
 /// - `INVALID_DOMAIN`: The domain does not have valid DNS/MX records
+/// - `ROLE_BASED_EMAIL`: The email uses a role-based local part (when enabled)
 /// - `DISPOSABLE_EMAIL`: The email comes from a disposable email provider
 /// - `DATABASE_ERROR`: Could not check disposable email database
 #[derive(SimpleObject, Clone, Serialize, Deserialize)]
 pub struct EmailValidationError {
-    /// Error code: INVALID_SYNTAX, INVALID_DOMAIN, DISPOSABLE_EMAIL, or DATABASE_ERROR
+    /// Error code: INVALID_SYNTAX, INVALID_DOMAIN, ROLE_BASED_EMAIL, DISPOSABLE_EMAIL, or DATABASE_ERROR
     pub code: String,
     /// Human-readable error message
     pub message: String,
@@ -120,8 +121,7 @@ impl EmailQuery {
             let cached_response: CachedValidationResponse = (*result).clone().into();
 
             if let Ok(json) = serde_json::to_string(&cached_response) {
-                let _: Result<(), RedisError> =
-                    conn.set_ex(&cache_key, json, self.cache_ttl as usize);
+                let _: Result<(), RedisError> = conn.set_ex(&cache_key, json, self.cache_ttl);
             }
         }
     }
@@ -133,6 +133,7 @@ impl EmailQuery {
         &self,
         _ctx: &Context<'_>,
         email: String,
+        check_role_based: Option<bool>,
     ) -> Result<EmailValidationResponse> {
         let email = email.trim();
 
@@ -142,7 +143,9 @@ impl EmailQuery {
         }
 
         // If not in cache, perform validation
-        let validation_result = self.perform_validation(_ctx, email.to_string()).await?;
+        let validation_result = self
+            .perform_validation(email.to_string(), check_role_based.unwrap_or(false))
+            .await?;
 
         // Cache the result if it's valid or has a permanent error (like invalid syntax)
         if validation_result.is_valid
@@ -158,8 +161,70 @@ impl EmailQuery {
         Ok(validation_result)
     }
 
-    // Move the validation logic to a separate method
-    async fn perform_validation(&self, email: String) -> Result<EmailValidationResponse> {
+    async fn validate_emails_bulk(
+        &self,
+        ctx: &Context<'_>,
+        emails: Vec<String>,
+    ) -> Result<BulkEmailValidationResponse> {
+        let validation_futures = emails
+            .iter()
+            .map(|email| {
+                let email_clone = email.clone();
+                let ctx = ctx.clone();
+                async move {
+                    let validation = self.validate_email(&ctx, email_clone.clone(), None).await?;
+                    Ok::<_, async_graphql::Error>((email_clone, validation))
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let results = join_all(validation_futures).await;
+        let mut validation_results = Vec::new();
+        let mut valid_count = 0;
+        let mut invalid_count = 0;
+
+        for result in results {
+            match result {
+                Ok((email, validation)) => {
+                    if validation.is_valid {
+                        valid_count += 1;
+                    } else {
+                        invalid_count += 1;
+                    }
+                    validation_results.push(BulkEmailValidationResult { email, validation });
+                }
+                Err(e) => {
+                    invalid_count += 1;
+                    validation_results.push(BulkEmailValidationResult {
+                        email: "unknown".to_string(),
+                        validation: EmailValidationResponse {
+                            is_valid: false,
+                            status: None,
+                            error: Some(EmailValidationError {
+                                code: "PROCESSING_ERROR".to_string(),
+                                message: format!("{:?}", e),
+                            }),
+                        },
+                    });
+                }
+            }
+        }
+
+        Ok(BulkEmailValidationResponse {
+            results: validation_results,
+            valid_count,
+            invalid_count,
+        })
+    }
+}
+
+// Move the validation logic to a separate method outside the Object impl
+impl EmailQuery {
+    async fn perform_validation(
+        &self,
+        email: String,
+        check_role_based: bool,
+    ) -> Result<EmailValidationResponse> {
         // 1. Syntax validation
         if !syntax::is_valid_email(&email) {
             return Ok(EmailValidationResponse {
@@ -190,7 +255,34 @@ impl EmailQuery {
             });
         }
 
-        // 3. Disposable email check
+        // 3. Role-based email check (optional)
+        if check_role_based {
+            match role_based::is_role_based_email(&email).await {
+                Ok(true) => {
+                    return Ok(EmailValidationResponse {
+                        is_valid: false,
+                        status: None,
+                        error: Some(EmailValidationError {
+                            code: "ROLE_BASED_EMAIL".to_string(),
+                            message: "Email address uses a role-based local part".to_string(),
+                        }),
+                    });
+                }
+                Ok(false) => {} // Continue validation
+                Err(e) => {
+                    return Ok(EmailValidationResponse {
+                        is_valid: false,
+                        status: None,
+                        error: Some(EmailValidationError {
+                            code: "DATABASE_ERROR".to_string(),
+                            message: e,
+                        }),
+                    });
+                }
+            }
+        }
+
+        // 4. Disposable email check
         match disposable::is_disposable_email(&email).await {
             Ok(true) => Ok(EmailValidationResponse {
                 is_valid: false,
@@ -215,83 +307,6 @@ impl EmailQuery {
                 }),
             }),
         }
-    }
-
-    /// Validates multiple email addresses in bulk through the same checks as validate_email:
-    /// 1. RFC 5322 compliant syntax validation
-    /// 2. Domain DNS/MX record verification
-    /// 3. Disposable email provider database check
-    ///
-    /// # Arguments
-    /// * `emails` - Array of email addresses to validate (each will be trimmed automatically)
-    ///
-    /// # Returns
-    /// [`BulkEmailValidationResponse`] containing:
-    /// - Results for each email in the input array
-    /// - Count of valid emails
-    /// - Count of invalid emails
-    async fn validate_emails_bulk(
-        &self,
-        ctx: &Context<'_>,
-        emails: Vec<String>,
-    ) -> Result<BulkEmailValidationResponse> {
-        // Create a vector of futures for validating each email
-        let validation_futures = emails
-            .iter()
-            .map(|email| {
-                let email_clone = email.clone();
-                let ctx = ctx.clone();
-                async move {
-                    let validation = self.validate_email(&ctx, email_clone.clone()).await?;
-                    Ok::<_, async_graphql::Error>((email_clone, validation))
-                }
-            })
-            .collect::<Vec<_>>();
-
-        // Run all validations in parallel
-        let results = join_all(validation_futures).await;
-
-        // Process results
-        let mut validation_results = Vec::new();
-        let mut valid_count = 0;
-        let mut invalid_count = 0;
-
-        for result in results {
-            match result {
-                Ok((email, validation)) => {
-                    // Count valid/invalid emails
-                    if validation.is_valid {
-                        valid_count += 1;
-                    } else {
-                        invalid_count += 1;
-                    }
-
-                    // Add to results
-                    validation_results.push(BulkEmailValidationResult { email, validation });
-                }
-                Err(e) => {
-                    // Handle any errors during validation
-                    invalid_count += 1;
-                    validation_results.push(BulkEmailValidationResult {
-                        email: "unknown".to_string(), // We lost the email in the error case
-                        validation: EmailValidationResponse {
-                            is_valid: false,
-                            status: None,
-                            error: Some(EmailValidationError {
-                                code: "PROCESSING_ERROR".to_string(),
-                                message: format!("{:?}", e),
-                            }),
-                        },
-                    });
-                }
-            }
-        }
-
-        Ok(BulkEmailValidationResponse {
-            results: validation_results,
-            valid_count,
-            invalid_count,
-        })
     }
 }
 
@@ -585,6 +600,95 @@ mod tests {
             validation_result["error"]["message"],
             "Failed to connect to the disposable email database"
         );
+    }
+
+    #[tokio::test]
+    async fn test_validate_email_role_based() {
+        // Create a custom EmailQuery with mocked validation behavior
+        struct TestEmailQuery;
+
+        #[Object]
+        impl TestEmailQuery {
+            async fn validate_email(
+                &self,
+                _ctx: &Context<'_>,
+                email: String,
+                check_role_based: Option<bool>,
+            ) -> Result<EmailValidationResponse> {
+                let email = email.trim();
+
+                // Mock behavior: admin@example.com is role-based when check is enabled
+                if check_role_based.unwrap_or(false) && email == "admin@example.com" {
+                    return Ok(EmailValidationResponse {
+                        is_valid: false,
+                        status: None,
+                        error: Some(EmailValidationError {
+                            code: "ROLE_BASED_EMAIL".to_string(),
+                            message: "Email address uses a role-based local part".to_string(),
+                        }),
+                    });
+                }
+
+                // Otherwise, valid email
+                Ok(EmailValidationResponse {
+                    is_valid: true,
+                    status: Some("VALID".to_string()),
+                    error: None,
+                })
+            }
+        }
+
+        // Create schema with our test query implementation
+        let schema = Schema::build(
+            TestEmailQuery,
+            async_graphql::EmptyMutation,
+            async_graphql::EmptySubscription,
+        )
+        .finish();
+
+        // Test with role-based check enabled
+        let query = r#"
+            query {
+                validateEmail(email: "admin@example.com", checkRoleBased: true) {
+                    isValid
+                    status
+                    error {
+                        code
+                        message
+                    }
+                }
+            }
+        "#;
+
+        let res = schema.execute(query).await;
+        assert!(res.errors.is_empty());
+
+        let data = res.data.into_json().unwrap();
+        let validation_result = &data["validateEmail"];
+        assert_eq!(validation_result["isValid"], false);
+        assert_eq!(validation_result["error"]["code"], "ROLE_BASED_EMAIL");
+
+        // Test with role-based check disabled (default)
+        let query = r#"
+            query {
+                validateEmail(email: "admin@example.com") {
+                    isValid
+                    status
+                    error {
+                        code
+                        message
+                    }
+                }
+            }
+        "#;
+
+        let res = schema.execute(query).await;
+        assert!(res.errors.is_empty());
+
+        let data = res.data.into_json().unwrap();
+        let validation_result = &data["validateEmail"];
+        assert_eq!(validation_result["isValid"], true);
+        assert_eq!(validation_result["status"], "VALID");
     }
 
     #[tokio::test]

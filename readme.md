@@ -113,19 +113,6 @@ cargo watch -x run
 cargo build --release
 ```
 
-### Contributing
-
-- Fork the repository.
-- Create a branch:
-
-```bash
-git checkout -b "feat/Closes #issuenumber issuetitle"
-#git checkout -b "feat/Closes #9 Set up rust project with actix"
-```
-
-- Follow Conventional Commits.
-- Submit a PR with tests and documentation.
-
 ### License
 
 MIT License.
@@ -180,8 +167,8 @@ MIT License.
 7. **Disposable & Role-Based Email Detection**
 
    - Integrate blocklists for disposable emails. ✅
-   - Detect role-based addresses (e.g., `admin@`, `support@`).
-   - **DoD**: Blocklists loaded at startup, role detection accuracy >95%.
+   - Detect role-based addresses (e.g., `admin@`, `support@`). ✅
+   - **DoD**: Blocklists loaded at startup, role detection accuracy >95%. ✅
 
 8. **Bulk Processing**
    - Add async bulk validation endpoint (`POST /bulk/validate`).

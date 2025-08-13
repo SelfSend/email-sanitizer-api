@@ -86,11 +86,14 @@ pub mod disposable;
 /// `true` if the email uses a role-based local part, `false` otherwise
 ///
 /// # Examples
-/// ```
+/// ```no_run
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// use email_sanitizer::handlers::validation::role_based::is_role_based_email;
 ///
-/// assert!(is_role_based_email("admin@example.com"));
-/// assert!(is_role_based_email("support@company.org"));
-/// assert!(!is_role_based_email("john.doe@example.com"));
+/// assert!(is_role_based_email("admin@example.com").await?);
+/// assert!(is_role_based_email("support@company.org").await?);
+/// assert!(!is_role_based_email("john.doe@example.com").await?);
+/// # Ok(())
+/// # }
 /// ```
 pub mod role_based;

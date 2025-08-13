@@ -48,7 +48,7 @@ impl RedisCache {
         &self,
         email_domain: &str,
     ) -> Result<Option<bool>, redis::RedisError> {
-        match self.client.get_async_connection().await {
+        match self.client.get_multiplexed_async_connection().await {
             Ok(mut conn) => {
                 let cache_key = format!("dns_mx::{}", email_domain);
                 let result: Option<String> = conn.get(&cache_key).await?;
@@ -67,12 +67,12 @@ impl RedisCache {
         email_domain: &str,
         is_valid: bool,
     ) -> Result<(), redis::RedisError> {
-        match self.client.get_async_connection().await {
+        match self.client.get_multiplexed_async_connection().await {
             Ok(mut conn) => {
                 let cache_key = format!("dns_mx::{}", email_domain);
                 let value = if is_valid { "valid" } else { "invalid" };
                 let _: () = conn.set(&cache_key, value).await?;
-                let _: () = conn.expire(&cache_key, self.ttl as usize).await?;
+                let _: () = conn.expire(&cache_key, self.ttl as i64).await?;
                 Ok(())
             }
             Err(e) => {
@@ -110,9 +110,9 @@ impl RedisCache {
 /// ```json
 /// { "email": "user@example.com" }
 /// ```
-/// 
+///
 /// With role-based validation:
-/// ```
+/// ```text
 /// POST /api/v1/validate-email?check_role_based=true
 /// { "email": "admin@example.com" }
 /// ```
@@ -190,7 +190,7 @@ pub async fn validate_email(
                     "message": "Email address uses a role-based local part"
                 })));
             }
-            Ok(false) => {}, // Continue validation
+            Ok(false) => {} // Continue validation
             Err(e) => {
                 return Ok(HttpResponse::InternalServerError().json(json!({
                     "error": "DATABASE_ERROR",
@@ -300,10 +300,13 @@ mod tests {
 
     #[actix_web::test]
     async fn test_role_based_email_detection_when_enabled() {
+        // Load environment variables from .env file for test
+        dotenv::dotenv().ok();
+        
         let app = create_test_app().await;
         let req = test::TestRequest::post()
             .uri("/validate-email?check_role_based=true")
-            .set_json(json!({ "email": "admin@example.com" }))
+            .set_json(json!({ "email": "support@apple.com" }))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
