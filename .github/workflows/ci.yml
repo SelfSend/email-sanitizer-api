@@ -18,8 +18,6 @@ jobs:
 
       - name: Install Rust and coverage tools
         uses: dtolnay/rust-toolchain@stable
-        with:
-          components: llvm-tools-preview
 
       - name: Install grcov
         run: cargo install grcov

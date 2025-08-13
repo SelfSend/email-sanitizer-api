@@ -114,7 +114,8 @@ impl EmailQuery {
 
     async fn cache_result(&self, email: &str, result: &EmailValidationResponse) {
         if let Some(client) = &self.redis_client
-            && let Ok(mut conn) = client.get_connection() {
+            && let Ok(mut conn) = client.get_connection()
+        {
             let cache_key = format!("email:validation:{}", email);
             let cached_response: CachedValidationResponse = (*result).clone().into();
 
