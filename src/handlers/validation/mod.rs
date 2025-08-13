@@ -73,3 +73,24 @@ pub mod syntax;
 /// # }
 /// ```
 pub mod disposable;
+
+/// Checks if an email address uses a role-based local part.
+///
+/// Role-based addresses are typically used for organizational functions
+/// rather than individual users (e.g., admin@, support@, info@).
+///
+/// # Arguments
+/// * `email` - A string slice containing the email address to check
+///
+/// # Returns
+/// `true` if the email uses a role-based local part, `false` otherwise
+///
+/// # Examples
+/// ```
+/// use email_sanitizer::handlers::validation::role_based::is_role_based_email;
+///
+/// assert!(is_role_based_email("admin@example.com"));
+/// assert!(is_role_based_email("support@company.org"));
+/// assert!(!is_role_based_email("john.doe@example.com"));
+/// ```
+pub mod role_based;

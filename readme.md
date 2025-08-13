@@ -119,8 +119,8 @@ cargo build --release
 - Create a branch:
 
 ```bash
-git checkout -b feat/issue-number-issue-name
-#git checkout -b "feat/9-set-up-rust-project-with-actixaxum"
+git checkout -b "feat/Closes #issuenumber issuetitle"
+#git checkout -b "feat/Closes #9 Set up rust project with actix"
 ```
 
 - Follow Conventional Commits.

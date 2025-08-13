@@ -1,4 +1,4 @@
-use crate::handlers::validation::{disposable, dnsmx, syntax};
+use crate::handlers::validation::{disposable, dnsmx, role_based, syntax};
 use actix_web::{HttpResponse, Responder, post, web};
 use redis::{AsyncCommands, Client};
 use serde::Deserialize;
@@ -9,6 +9,12 @@ use utoipa::ToSchema;
 #[derive(Deserialize, ToSchema)]
 pub struct EmailRequest {
     email: String,
+}
+
+#[derive(Deserialize)]
+pub struct ValidationQuery {
+    #[serde(default)]
+    check_role_based: bool,
 }
 
 // Redis client wrapper with connection pool
@@ -79,31 +85,44 @@ impl RedisCache {
 
 /// # Email Validation Endpoint
 ///
-/// Validates an email address by checking three aspects:
+/// Validates an email address by checking multiple aspects:
 /// 1. RFC-compliant syntax validation
 /// 2. Domain DNS/MX record verification (with Redis caching)
-/// 3. Disposable email domain check
+/// 3. Role-based email address detection (optional, via query parameter)
+/// 4. Disposable email domain check
 ///
 /// ## Request
 /// - Method: POST
 /// - Body: JSON object with `email` field
+/// - Query Parameters:
+///   - `check_role_based` (optional): Set to `true` to enable role-based validation
 ///
 /// ## Responses
 /// - **200 OK**: Email is valid
 /// - **400 Bad Request**:
 ///   - Invalid email syntax
 ///   - Domain has no valid MX/A/AAAA records
+///   - Role-based email address detected (if enabled)
 ///   - Disposable email detected
 /// - **500 Internal Server Error**: Database or Redis connection failed
 ///
-/// ## Example Request
+/// ## Example Requests
 /// ```json
 /// { "email": "user@example.com" }
+/// ```
+/// 
+/// With role-based validation:
+/// ```
+/// POST /api/v1/validate-email?check_role_based=true
+/// { "email": "admin@example.com" }
 /// ```
 #[utoipa::path(
     post,
     path = "/api/v1/validate-email",
     request_body = EmailRequest,
+    params(
+        ("check_role_based" = Option<bool>, Query, description = "Enable role-based email validation")
+    ),
     responses(
         (status = 200, description = "Email is valid"),
         (status = 400, description = "Invalid email"),
@@ -114,6 +133,7 @@ impl RedisCache {
 #[post("/validate-email")]
 pub async fn validate_email(
     req: web::Json<EmailRequest>,
+    query: web::Query<ValidationQuery>,
     redis_cache: web::Data<RedisCache>,
 ) -> Result<impl Responder, actix_web::Error> {
     let email = req.email.trim();
@@ -161,7 +181,26 @@ pub async fn validate_email(
         })));
     }
 
-    // 3. Disposable email check
+    // 3. Role-based email check (optional)
+    if query.check_role_based {
+        match role_based::is_role_based_email(email).await {
+            Ok(true) => {
+                return Ok(HttpResponse::BadRequest().json(json!({
+                    "error": "ROLE_BASED_EMAIL",
+                    "message": "Email address uses a role-based local part"
+                })));
+            }
+            Ok(false) => {}, // Continue validation
+            Err(e) => {
+                return Ok(HttpResponse::InternalServerError().json(json!({
+                    "error": "DATABASE_ERROR",
+                    "message": e
+                })));
+            }
+        }
+    }
+
+    // 4. Disposable email check
     match disposable::is_disposable_email(email).await {
         Ok(true) => Ok(HttpResponse::BadRequest().json(json!({
             "error": "DISPOSABLE_EMAIL",
@@ -257,6 +296,39 @@ mod tests {
             body_json["message"],
             "Email domain has no valid DNS records"
         );
+    }
+
+    #[actix_web::test]
+    async fn test_role_based_email_detection_when_enabled() {
+        let app = create_test_app().await;
+        let req = test::TestRequest::post()
+            .uri("/validate-email?check_role_based=true")
+            .set_json(json!({ "email": "admin@example.com" }))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status().as_u16(), 400);
+
+        let body = test::read_body(resp).await;
+        let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(body_json["error"], "ROLE_BASED_EMAIL");
+        assert_eq!(
+            body_json["message"],
+            "Email address uses a role-based local part"
+        );
+    }
+
+    #[actix_web::test]
+    async fn test_role_based_email_allowed_by_default() {
+        let app = create_test_app().await;
+        let req = test::TestRequest::post()
+            .uri("/validate-email")
+            .set_json(json!({ "email": "admin@example.com" }))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        // Should pass validation since role-based check is disabled by default
+        assert!(resp.status().is_success());
     }
 
     #[actix_web::test]
