@@ -5,6 +5,7 @@ Cargo.lock
 # Coverage
 coverage/
 *.profraw
+profraw/
 coverage.lcov
 
 # Environment

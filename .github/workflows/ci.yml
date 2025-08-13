@@ -7,7 +7,7 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
       RUSTFLAGS: "-C instrument-coverage"
-      LLVM_PROFILE_FILE: "cargo-test-%p-%m.profraw"
+      LLVM_PROFILE_FILE: "profraw/cargo-test-%p-%m.profraw"
       MONGODB_URI: ${{ secrets.MONGODB_URI }}
       DB_NAME_TEST: ${{ secrets.DB_NAME_TEST }}
       DB_NAME_PRODUCTION: ${{ secrets.DB_NAME_PRODUCTION }}
@@ -33,9 +33,10 @@ jobs:
 
       - name: Run Tests with Coverage
         run: |
+          mkdir -p profraw
           cargo test --verbose
           # Generate coverage report
-          grcov . \
+          grcov profraw/ \
             --binary-path ./target/debug/deps/ \
             -s . \
             -t lcov \
