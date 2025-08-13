@@ -1,15 +1,19 @@
 # Rust
 /target/
-**/*.rs.bk
+Cargo.lock
 
-# Env variables
+# Coverage
+coverage/
+*.profraw
+coverage.lcov
+
+# Environment
 .env
 
-# Coverage Reports
-/coverage-report/
-
-# Others
-.DS_Store
-.idea/
+# IDE
 .vscode/
-notes
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

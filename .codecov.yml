@@ -1,4 +1,21 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+    patch:
+      default:
+        target: 80%
+
 ignore:
-  - "src/lib.rs"
   - "src/main.rs"
+  - "src/lib.rs"
   - "src/openapi.rs"
+  - "target/"
+  - "tests/"
+
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: false
