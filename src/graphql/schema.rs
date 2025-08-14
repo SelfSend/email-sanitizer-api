@@ -130,7 +130,7 @@ mod tests {
         // Just ensure we can create a default instance
         // This tests the Default trait implementation
         let schema = Schema::build(root_query, EmptyMutation, EmptySubscription).finish();
-        
+
         let query = "{ health { status } }";
         let result = tokio_test::block_on(schema.execute(query));
         assert!(result.errors.is_empty());
@@ -161,7 +161,11 @@ mod tests {
         "#;
 
         let result = tokio_test::block_on(schema.execute(query));
-        assert!(result.errors.is_empty(), "GraphQL query has errors: {:?}", result.errors);
+        assert!(
+            result.errors.is_empty(),
+            "GraphQL query has errors: {:?}",
+            result.errors
+        );
 
         let data = result.data.into_json().unwrap();
         assert!(data["validateEmailsBulk"]["results"].is_array());

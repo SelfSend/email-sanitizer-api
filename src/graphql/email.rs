@@ -911,7 +911,8 @@ mod tests {
     #[tokio::test]
     async fn test_email_validation_caching() {
         // Create a test Redis client with a short TTL
-        let email_query = EmailQuery::new("redis://127.0.0.1:6379", 5).unwrap_or_else(|_| EmailQuery::default());
+        let email_query =
+            EmailQuery::new("redis://127.0.0.1:6379", 5).unwrap_or_else(|_| EmailQuery::default());
 
         let test_email = "test@example.com";
 
@@ -994,7 +995,10 @@ mod tests {
         assert_eq!(original.is_valid, converted.is_valid);
         assert_eq!(original.status, converted.status);
         assert!(original.error.is_some() && converted.error.is_some());
-        assert_eq!(original.error.as_ref().unwrap().code, converted.error.as_ref().unwrap().code);
+        assert_eq!(
+            original.error.as_ref().unwrap().code,
+            converted.error.as_ref().unwrap().code
+        );
     }
 
     #[tokio::test]

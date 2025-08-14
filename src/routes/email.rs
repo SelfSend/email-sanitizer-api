@@ -302,7 +302,7 @@ mod tests {
     async fn test_role_based_email_detection_when_enabled() {
         // Load environment variables from .env file for test
         dotenv::dotenv().ok();
-        
+
         let app = create_test_app().await;
         let req = test::TestRequest::post()
             .uri("/validate-email?check_role_based=true")
@@ -387,11 +387,11 @@ mod tests {
     #[actix_web::test]
     async fn test_redis_cache_methods() {
         let redis_cache = RedisCache::test_dummy();
-        
+
         // Test get_dns_validation with cache miss
         let result = redis_cache.get_dns_validation("example.com").await;
         assert!(result.is_ok());
-        
+
         // Test set_dns_validation
         let result = redis_cache.set_dns_validation("example.com", true).await;
         assert!(result.is_ok());
@@ -402,7 +402,7 @@ mod tests {
         // Test with valid Redis URL
         let result = RedisCache::new("redis://127.0.0.1:6379", 3600);
         assert!(result.is_ok() || result.is_err()); // Either works or fails gracefully
-        
+
         // Test with invalid Redis URL
         let result = RedisCache::new("invalid://url", 3600);
         assert!(result.is_err());
@@ -416,15 +416,16 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(RedisCache::test_dummy()))
-                .configure(configure_routes)
-        ).await;
-        
+                .configure(configure_routes),
+        )
+        .await;
+
         // Test that the routes are configured by making a request
         let req = test::TestRequest::post()
             .uri("/validate-email")
             .set_json(json!({ "email": "test@example.com" }))
             .to_request();
-        
+
         let resp = test::call_service(&app, req).await;
         // Should not be 404 (not found), meaning route is configured
         assert_ne!(resp.status().as_u16(), 404);
