@@ -22,6 +22,9 @@ use std::env;
 /// ```
 pub async fn is_role_based_email(email: &str) -> Result<bool, String> {
     let at_pos = email.find('@').ok_or("Invalid email format")?;
+    if at_pos == 0 {
+        return Err("Invalid email format".to_string());
+    }
     let local_part = email[..at_pos].to_lowercase();
 
     let mongo_uri =
