@@ -1,0 +1,51 @@
+POST http://localhost:8080/api/v1/validate-emails-bulk?check_role_based=true
+Content-Type: application/json
+
+{
+  "emails": [
+    "user@example.com",
+    "admin@example.com",
+    "support@apple.com"
+  ]
+}
+
+//  Expected Response:
+//  HTTP/1.1 200 OK
+//  content-type: application/json
+//
+//  {
+//    "results": [
+//      {
+//        "email": "user@example.com",
+//        "validation": {
+//          "is_valid": true,
+//          "status": "VALID",
+//          "error": null
+//        }
+//      },
+//      {
+//        "email": "admin@example.com",
+//        "validation": {
+//          "is_valid": false,
+//          "status": null,
+//          "error": {
+//            "code": "ROLE_BASED_EMAIL",
+//            "message": "Email address uses a role-based local part"
+//          }
+//        }
+//      },
+//      {
+//        "email": "support@apple.com",
+//        "validation": {
+//          "is_valid": false,
+//          "status": null,
+//          "error": {
+//            "code": "ROLE_BASED_EMAIL",
+//            "message": "Email address uses a role-based local part"
+//          }
+//        }
+//      }
+//    ],
+//    "valid_count": 1,
+//    "invalid_count": 2
+//  }

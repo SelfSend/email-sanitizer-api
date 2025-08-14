@@ -1,0 +1,45 @@
+POST http://localhost:8080/api/v1/validate-emails-bulk
+Content-Type: application/json
+
+{
+  "emails": [
+    "user@example.com",
+    "test@example.org",
+    "valid@example.net"
+  ]
+}
+
+//  Expected Response:
+//  HTTP/1.1 200 OK
+//  content-type: application/json
+//
+//  {
+//    "results": [
+//      {
+//        "email": "user@example.com",
+//        "validation": {
+//          "is_valid": true,
+//          "status": "VALID",
+//          "error": null
+//        }
+//      },
+//      {
+//        "email": "test@example.org",
+//        "validation": {
+//          "is_valid": true,
+//          "status": "VALID",
+//          "error": null
+//        }
+//      },
+//      {
+//        "email": "valid@example.net",
+//        "validation": {
+//          "is_valid": true,
+//          "status": "VALID",
+//          "error": null
+//        }
+//      }
+//    ],
+//    "valid_count": 3,
+//    "invalid_count": 0
+//  }

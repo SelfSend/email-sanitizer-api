@@ -1,6 +1,6 @@
 [package]
 name = "email-sanitizer"
-version = "0.8.0+sprint4"
+version = "0.9.0+sprint4"
 edition = "2024"
 
 [dependencies]

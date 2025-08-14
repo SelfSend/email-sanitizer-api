@@ -1,0 +1,63 @@
+POST http://localhost:8080/api/v1/validate-emails-bulk
+Content-Type: application/json
+
+{
+  "emails": [
+    "valid@example.com",
+    "invalid-email",
+    "user@nonexistent.invalid",
+    "test@mailinator.com"
+  ]
+}
+
+//  Expected Response:
+//  HTTP/1.1 200 OK
+//  content-type: application/json
+//
+//  {
+//    "results": [
+//      {
+//        "email": "valid@example.com",
+//        "validation": {
+//          "is_valid": true,
+//          "status": "VALID",
+//          "error": null
+//        }
+//      },
+//      {
+//        "email": "invalid-email",
+//        "validation": {
+//          "is_valid": false,
+//          "status": null,
+//          "error": {
+//            "code": "INVALID_SYNTAX",
+//            "message": "Email address has invalid syntax"
+//          }
+//        }
+//      },
+//      {
+//        "email": "user@nonexistent.invalid",
+//        "validation": {
+//          "is_valid": false,
+//          "status": null,
+//          "error": {
+//            "code": "INVALID_DOMAIN",
+//            "message": "Email domain has no valid DNS records"
+//          }
+//        }
+//      },
+//      {
+//        "email": "test@mailinator.com",
+//        "validation": {
+//          "is_valid": false,
+//          "status": null,
+//          "error": {
+//            "code": "DISPOSABLE_EMAIL",
+//            "message": "The email address domain is a provider of disposable email addresses"
+//          }
+//        }
+//      }
+//    ],
+//    "valid_count": 1,
+//    "invalid_count": 3
+//  }
