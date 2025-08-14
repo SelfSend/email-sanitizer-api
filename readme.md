@@ -172,8 +172,8 @@ MIT License.
 
 8. **Bulk Processing**
    - Add async bulk validation REST endpoint (`POST /bulk/validate`). ✅
-   - Implement job queue (Redis or MongoDB).
-   - **DoD**: Processes 10K emails in <5 mins, returns job status.
+   - Implement job queue (Redis). ✅
+   - **DoD**: Processes 10K emails in <5 mins, returns job status. ✅
 
 ---
 

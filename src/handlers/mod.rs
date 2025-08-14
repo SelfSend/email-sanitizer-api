@@ -26,7 +26,6 @@ pub mod validation;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
     fn test_health_module_exists() {

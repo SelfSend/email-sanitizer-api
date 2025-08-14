@@ -1027,6 +1027,7 @@ dependencies = [
  "trust-dns-resolver",
  "utoipa",
  "utoipa-swagger-ui",
+ "uuid",
 ]
 
 [[package]]

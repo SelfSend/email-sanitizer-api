@@ -1,4 +1,5 @@
 use crate::handlers::validation::{disposable, dnsmx, role_based, syntax};
+use crate::job_queue::JobQueue;
 use async_graphql::{Context, Object, Result, SimpleObject};
 use futures::future::join_all;
 use redis::{Client, Commands, RedisError};
@@ -165,7 +166,37 @@ impl EmailQuery {
         &self,
         ctx: &Context<'_>,
         emails: Vec<String>,
+        use_queue: Option<bool>,
     ) -> Result<BulkEmailValidationResponse> {
+        // Use job queue for large batches if available and requested
+        if use_queue.unwrap_or(false)
+            && emails.len() > 10
+            && let Some(job_queue) = ctx.data_opt::<JobQueue>()
+        {
+            match job_queue
+                .enqueue_bulk_validation(emails.clone(), false)
+                .await
+            {
+                Ok(job_id) => {
+                    return Ok(BulkEmailValidationResponse {
+                        results: vec![BulkEmailValidationResult {
+                            email: "queued".to_string(),
+                            validation: EmailValidationResponse {
+                                is_valid: false,
+                                status: Some(format!("QUEUED:{}", job_id)),
+                                error: None,
+                            },
+                        }],
+                        valid_count: 0,
+                        invalid_count: 0,
+                    });
+                }
+                Err(_) => {
+                    // Fallback to immediate processing
+                }
+            }
+        }
+
         let validation_futures = emails
             .iter()
             .map(|email| {
@@ -215,6 +246,18 @@ impl EmailQuery {
             valid_count,
             invalid_count,
         })
+    }
+
+    async fn get_job_status(&self, ctx: &Context<'_>, job_id: String) -> Result<String> {
+        if let Some(job_queue) = ctx.data_opt::<JobQueue>() {
+            match job_queue.get_job_status(&job_id).await {
+                Ok(Some(job)) => Ok(format!("{:?}", job.status)),
+                Ok(None) => Err(async_graphql::Error::new("Job not found")),
+                Err(e) => Err(async_graphql::Error::new(format!("Redis error: {:?}", e))),
+            }
+        } else {
+            Err(async_graphql::Error::new("Job queue not available"))
+        }
     }
 }
 
@@ -780,6 +823,7 @@ mod tests {
                 &self,
                 ctx: &Context<'_>,
                 emails: Vec<String>,
+                _use_queue: Option<bool>,
             ) -> Result<BulkEmailValidationResponse> {
                 // Create a vector of futures for validating each email
                 let validation_futures = emails

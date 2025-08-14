@@ -1,5 +1,6 @@
 use actix_web::{App, HttpServer, web::Data};
 use email_sanitizer::graphql::schema::create_schema;
+use email_sanitizer::job_queue::JobQueue;
 use email_sanitizer::openapi::ApiDoc;
 use email_sanitizer::routes::email::RedisCache;
 use std::env::VarError;
@@ -41,6 +42,9 @@ async fn main() -> std::io::Result<()> {
     let redis_cache =
         RedisCache::new(&redis_url, redis_ttl).expect("Failed to initialize Redis connection");
 
+    // Initialize job queue
+    let job_queue = JobQueue::new(&redis_url).expect("Failed to initialize job queue");
+
     // Create GraphQL schema
     let schema = create_schema();
 
@@ -63,6 +67,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(Data::new(openapi.clone()))
             .app_data(Data::new(schema.clone()))
             .app_data(Data::new(redis_cache.clone()))
+            .app_data(Data::new(job_queue.clone()))
             .configure(email_sanitizer::routes::configure)
             .service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi))
     })

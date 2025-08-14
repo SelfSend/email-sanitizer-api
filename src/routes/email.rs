@@ -1,4 +1,5 @@
 use crate::handlers::validation::{disposable, dnsmx, role_based, syntax};
+use crate::job_queue::JobQueue;
 use actix_web::{HttpResponse, Responder, post, web};
 use futures::future::join_all;
 use redis::{AsyncCommands, Client};
@@ -249,7 +250,7 @@ pub async fn validate_email(
     }
 }
 
-async fn validate_single_email(
+pub async fn validate_single_email(
     email: &str,
     check_role_based: bool,
     redis_cache: &RedisCache,
@@ -390,7 +391,28 @@ pub async fn validate_emails_bulk(
     req: web::Json<BulkEmailRequest>,
     query: web::Query<ValidationQuery>,
     redis_cache: web::Data<RedisCache>,
+    job_queue: web::Data<JobQueue>,
 ) -> Result<impl Responder, actix_web::Error> {
+    // For large batches (>10 emails), use job queue
+    if req.emails.len() > 10 {
+        match job_queue
+            .enqueue_bulk_validation(req.emails.clone(), query.check_role_based)
+            .await
+        {
+            Ok(job_id) => {
+                return Ok(HttpResponse::Accepted().json(json!({
+                    "job_id": job_id,
+                    "status": "queued",
+                    "message": "Bulk validation job queued for processing"
+                })));
+            }
+            Err(_) => {
+                // Fallback to immediate processing if queue fails
+            }
+        }
+    }
+
+    // Process immediately for small batches or queue failure
     let validation_futures = req
         .emails
         .iter()
@@ -427,9 +449,41 @@ pub async fn validate_emails_bulk(
     }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/v1/job-status/{job_id}",
+    responses(
+        (status = 200, description = "Job status retrieved")
+    ),
+    tag = "Email Validation"
+)]
+#[actix_web::get("/job-status/{job_id}")]
+pub async fn get_job_status(
+    path: web::Path<String>,
+    job_queue: web::Data<JobQueue>,
+) -> Result<impl Responder, actix_web::Error> {
+    let job_id = path.into_inner();
+
+    match job_queue.get_job_status(&job_id).await {
+        Ok(Some(job)) => Ok(HttpResponse::Ok().json(json!({
+            "job_id": job.id,
+            "status": job.status,
+            "created_at": job.created_at
+        }))),
+        Ok(None) => Ok(HttpResponse::NotFound().json(json!({
+            "error": "Job not found"
+        }))),
+        Err(_) => Ok(HttpResponse::InternalServerError().json(json!({
+            "error": "Failed to retrieve job status"
+        }))),
+    }
+}
+
 /// Configures email validation routes under /api/v1
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
-    cfg.service(validate_email).service(validate_emails_bulk);
+    cfg.service(validate_email)
+        .service(validate_emails_bulk)
+        .service(get_job_status);
 }
 
 #[cfg(test)]
@@ -455,9 +509,17 @@ mod tests {
             RedisCache::test_dummy()
         });
 
+        // Create JobQueue for tests
+        let job_queue = JobQueue::new(&redis_url).unwrap_or_else(|_| {
+            eprintln!("Warning: JobQueue creation failed, using dummy");
+            // Create a dummy JobQueue that won't actually work but won't crash
+            JobQueue::new("redis://127.0.0.1:6379").unwrap()
+        });
+
         test::init_service(
             App::new()
                 .app_data(web::Data::new(redis_cache))
+                .app_data(web::Data::new(job_queue))
                 .configure(configure_routes),
         )
         .await

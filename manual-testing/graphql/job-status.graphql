@@ -1,0 +1,3 @@
+query JobStatus {
+  getJobStatus(jobId: "replace-with-actual-job-id")
+}
