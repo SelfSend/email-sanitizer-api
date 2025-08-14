@@ -171,7 +171,7 @@ MIT License.
    - **DoD**: Blocklists loaded at startup, role detection accuracy >95%. ✅
 
 8. **Bulk Processing**
-   - Add async bulk validation endpoint (`POST /bulk/validate`). ✅
+   - Add async bulk validation REST endpoint (`POST /bulk/validate`). ✅
    - Implement job queue (Redis or MongoDB).
    - **DoD**: Processes 10K emails in <5 mins, returns job status.
 

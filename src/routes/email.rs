@@ -332,7 +332,8 @@ async fn validate_single_email(
             status: None,
             error: Some(EmailValidationError {
                 code: "DISPOSABLE_EMAIL".to_string(),
-                message: "The email address domain is a provider of disposable email addresses".to_string(),
+                message: "The email address domain is a provider of disposable email addresses"
+                    .to_string(),
             }),
         },
         Ok(false) => EmailValidationResponse {
@@ -398,7 +399,8 @@ pub async fn validate_emails_bulk(
             let redis_cache = redis_cache.get_ref().clone();
             let check_role_based = query.check_role_based;
             async move {
-                let validation = validate_single_email(&email_clone, check_role_based, &redis_cache).await;
+                let validation =
+                    validate_single_email(&email_clone, check_role_based, &redis_cache).await;
                 (email_clone, validation)
             }
         })
@@ -654,7 +656,7 @@ mod tests {
 
         let body = test::read_body(resp).await;
         let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-        
+
         assert!(body_json["results"].is_array());
         assert_eq!(body_json["results"].as_array().unwrap().len(), 2);
         assert!(body_json["valid_count"].is_number());
@@ -676,10 +678,10 @@ mod tests {
 
         let body = test::read_body(resp).await;
         let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-        
+
         let results = body_json["results"].as_array().unwrap();
         assert_eq!(results.len(), 3);
-        
+
         // Check that we have both valid and invalid results
         let valid_count = body_json["valid_count"].as_i64().unwrap();
         let invalid_count = body_json["invalid_count"].as_i64().unwrap();
@@ -702,7 +704,7 @@ mod tests {
 
         let body = test::read_body(resp).await;
         let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-        
+
         let results = body_json["results"].as_array().unwrap();
         assert_eq!(results.len(), 2);
     }
@@ -720,7 +722,7 @@ mod tests {
 
         let body = test::read_body(resp).await;
         let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-        
+
         assert_eq!(body_json["results"].as_array().unwrap().len(), 0);
         assert_eq!(body_json["valid_count"], 0);
         assert_eq!(body_json["invalid_count"], 0);
@@ -741,27 +743,30 @@ mod tests {
 
         let body = test::read_body(resp).await;
         let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-        
+
         let results = body_json["results"].as_array().unwrap();
-        
+
         // Find the disposable email result
         let disposable_result = results
             .iter()
             .find(|r| r["email"] == "user@mailinator.com")
             .unwrap();
-        
+
         assert_eq!(disposable_result["validation"]["is_valid"], false);
-        assert_eq!(disposable_result["validation"]["error"]["code"], "DISPOSABLE_EMAIL");
+        assert_eq!(
+            disposable_result["validation"]["error"]["code"],
+            "DISPOSABLE_EMAIL"
+        );
     }
 
     #[actix_web::test]
     async fn test_validate_single_email_function() {
         let redis_cache = RedisCache::test_dummy();
-        
+
         // Test valid email
         let result = validate_single_email("test@example.com", false, &redis_cache).await;
         assert!(result.is_valid || !result.is_valid); // Either outcome is valid for this test
-        
+
         // Test invalid syntax
         let result = validate_single_email("invalid-email", false, &redis_cache).await;
         assert!(!result.is_valid);
