@@ -1,0 +1,37 @@
+# Valid email validation with authentication
+# First run POST-register.http to get an API key, then add it to HTTP headers:
+# Authorization: Bearer YOUR_API_KEY_HERE
+query ValidateEmailWithAuth {
+  validateEmail(email: "test@example.com") {
+    isValid
+    status
+    error {
+      code
+      message
+    }
+  }
+}
+
+# Bulk validation with authentication
+query BulkValidationWithAuth {
+  validateEmailsBulk(emails: ["test@example.com", "user@example.org"]) {
+    results {
+      email
+      validation {
+        isValid
+        status
+        error {
+          code
+          message
+        }
+      }
+    }
+    validCount
+    invalidCount
+  }
+}
+
+# Job status with authentication
+query JobStatusWithAuth {
+  getJobStatus(jobId: "test-job-id")
+}

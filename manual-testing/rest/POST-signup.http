@@ -1,0 +1,43 @@
+### Register - Valid User
+POST http://localhost:8080/api/v1/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "mypassword123"
+}
+
+### Register - Different User
+POST http://localhost:8080/api/v1/register
+Content-Type: application/json
+
+{
+  "email": "anotheruser@domain.com",
+  "password": "mypassword456"
+}
+
+### Register - Invalid Email Format
+POST http://localhost:8080/api/v1/register
+Content-Type: application/json
+
+{
+  "email": "invalid-email",
+  "password": "password123"
+}
+
+### Register - Missing Password
+POST http://localhost:8080/api/v1/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+
+### Register - Empty Password
+POST http://localhost:8080/api/v1/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": ""
+}

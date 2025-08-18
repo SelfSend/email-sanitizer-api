@@ -1,3 +1,4 @@
+
 use crate::handlers::validation::{disposable, dnsmx, role_based, syntax};
 use crate::job_queue::JobQueue;
 use actix_web::{HttpResponse, Responder, post, web};
@@ -7,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use utoipa::ToSchema;
+use mongodb::Client as MongoClient;
 
 #[derive(Deserialize, ToSchema)]
 pub struct EmailRequest {
@@ -168,7 +170,22 @@ pub async fn validate_email(
     req: web::Json<EmailRequest>,
     query: web::Query<ValidationQuery>,
     redis_cache: web::Data<RedisCache>,
+    mongo_client: web::Data<MongoClient>,
+    http_req: actix_web::HttpRequest,
 ) -> Result<impl Responder, actix_web::Error> {
+    // Check API key
+    let auth_header = http_req.headers().get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
+
+    let db = mongo_client.database("email_sanitizer");
+    let collection: mongodb::Collection<crate::auth::ApiKey> = db.collection("api_keys");
+    
+    match collection.find_one(mongodb::bson::doc! { "key": auth_header, "active": true }).await {
+        Ok(Some(_)) => {},
+        _ => return Err(actix_web::error::ErrorUnauthorized("Invalid API key"))
+    }
     let email = req.email.trim();
 
     // 1. Syntax validation
@@ -392,7 +409,22 @@ pub async fn validate_emails_bulk(
     query: web::Query<ValidationQuery>,
     redis_cache: web::Data<RedisCache>,
     job_queue: web::Data<JobQueue>,
+    mongo_client: web::Data<MongoClient>,
+    http_req: actix_web::HttpRequest,
 ) -> Result<impl Responder, actix_web::Error> {
+    // Check API key
+    let auth_header = http_req.headers().get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
+
+    let db = mongo_client.database("email_sanitizer");
+    let collection: mongodb::Collection<crate::auth::ApiKey> = db.collection("api_keys");
+    
+    match collection.find_one(mongodb::bson::doc! { "key": auth_header, "active": true }).await {
+        Ok(Some(_)) => {},
+        _ => return Err(actix_web::error::ErrorUnauthorized("Invalid API key"))
+    }
     // For large batches (>10 emails), use job queue
     if req.emails.len() > 10 {
         match job_queue
@@ -461,7 +493,22 @@ pub async fn validate_emails_bulk(
 pub async fn get_job_status(
     path: web::Path<String>,
     job_queue: web::Data<JobQueue>,
+    mongo_client: web::Data<MongoClient>,
+    http_req: actix_web::HttpRequest,
 ) -> Result<impl Responder, actix_web::Error> {
+    // Check API key
+    let auth_header = http_req.headers().get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
+
+    let db = mongo_client.database("email_sanitizer");
+    let collection: mongodb::Collection<crate::auth::ApiKey> = db.collection("api_keys");
+    
+    match collection.find_one(mongodb::bson::doc! { "key": auth_header, "active": true }).await {
+        Ok(Some(_)) => {},
+        _ => return Err(actix_web::error::ErrorUnauthorized("Invalid API key"))
+    }
     let job_id = path.into_inner();
 
     match job_queue.get_job_status(&job_id).await {

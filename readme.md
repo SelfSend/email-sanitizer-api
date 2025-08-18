@@ -183,9 +183,9 @@ MIT License.
 
 9. **Authentication & Authorization**
 
-   - Add JWT/API key authentication.
-   - Restrict sensitive endpoints.
-   - **DoD**: Unauthorized requests blocked, keys validated via DB.
+   - Add JWT/API key authentication. ✅
+   - Restrict sensitive endpoints. ✅
+   - **DoD**: Unauthorized requests blocked, keys validated via DB. ✅
 
 10. **Rate Limiting**
 

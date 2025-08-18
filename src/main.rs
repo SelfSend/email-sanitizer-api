@@ -3,6 +3,7 @@ use email_sanitizer::graphql::schema::create_schema;
 use email_sanitizer::job_queue::JobQueue;
 use email_sanitizer::openapi::ApiDoc;
 use email_sanitizer::routes::email::RedisCache;
+use mongodb::Client as MongoClient;
 use std::env::VarError;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -28,7 +29,7 @@ use utoipa_swagger_ui::SwaggerUi;
 /// - Redis URL from REDIS_URL environment variable (defaults to localhost:6379)
 /// - Redis cache TTL from REDIS_CACHE_TTL environment variable (defaults to 86400 seconds/24 hours)
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv::dotenv().ok();
 
     // Initialize Redis cache
@@ -44,6 +45,13 @@ async fn main() -> std::io::Result<()> {
 
     // Initialize job queue
     let job_queue = JobQueue::new(&redis_url).expect("Failed to initialize job queue");
+
+    // Initialize MongoDB client
+    let mongodb_uri = std::env::var("MONGODB_URI")
+        .expect("MONGODB_URI environment variable is required");
+    let mongo_client = MongoClient::with_uri_str(&mongodb_uri)
+        .await
+        .expect("Failed to initialize MongoDB client");
 
     // Create GraphQL schema
     let schema = create_schema();
@@ -68,6 +76,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(Data::new(schema.clone()))
             .app_data(Data::new(redis_cache.clone()))
             .app_data(Data::new(job_queue.clone()))
+            .app_data(Data::new(mongo_client.clone()))
             .configure(email_sanitizer::routes::configure)
             .service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi))
     })
@@ -77,6 +86,7 @@ async fn main() -> std::io::Result<()> {
     ))?
     .run()
     .await
+    .map_err(|e| e.into())
 }
 
 #[cfg(test)]

@@ -1,4 +1,5 @@
 use actix_web::web;
+pub mod auth;
 pub mod email;
 pub mod graphql;
 pub mod health;
@@ -39,6 +40,7 @@ pub mod health;
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api/v1")
+            .configure(auth::configure_routes)
             .configure(health::configure_routes)
             .configure(email::configure_routes)
             .configure(graphql::configure_routes),
