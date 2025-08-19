@@ -124,11 +124,12 @@ mod tests {
     /// Test email validation endpoints
     #[actix_web::test]
     async fn test_email_validation_endpoints() -> Result<(), Error> {
-        use mongodb::{Client as MongoClient, options::ClientOptions};
         use crate::job_queue::JobQueue;
-        
+        use mongodb::{Client as MongoClient, options::ClientOptions};
+
         // Create MongoDB client for tests
-        let mongo_uri = std::env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
+        let mongo_uri = std::env::var("MONGODB_URI")
+            .unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
         let client_options = ClientOptions::parse(&mongo_uri).await.unwrap_or_else(|_| {
             // Use a simple default configuration if parsing fails
             ClientOptions::default()
@@ -137,12 +138,11 @@ mod tests {
             // Create a simple client with default options if connection fails
             MongoClient::with_options(ClientOptions::default()).unwrap()
         });
-        
+
         // Create JobQueue for tests
-        let job_queue = JobQueue::new("redis://127.0.0.1:6379").unwrap_or_else(|_| {
-            JobQueue::new("redis://127.0.0.1:6379").unwrap()
-        });
-        
+        let job_queue = JobQueue::new("redis://127.0.0.1:6379")
+            .unwrap_or_else(|_| JobQueue::new("redis://127.0.0.1:6379").unwrap());
+
         let app = test::init_service(
             App::new()
                 .app_data(Data::new(create_test_redis_cache()))

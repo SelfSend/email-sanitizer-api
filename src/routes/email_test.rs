@@ -13,7 +13,10 @@ mod email_route_tests {
     #[test]
     fn test_bulk_email_request_struct() {
         let req = BulkEmailRequest {
-            emails: vec!["test1@example.com".to_string(), "test2@example.com".to_string()],
+            emails: vec![
+                "test1@example.com".to_string(),
+                "test2@example.com".to_string(),
+            ],
         };
         assert_eq!(req.emails.len(), 2);
         assert_eq!(req.emails[0], "test1@example.com");
@@ -134,7 +137,7 @@ mod email_route_tests {
     async fn test_validate_single_email_invalid_syntax() {
         let cache = RedisCache::test_dummy();
         let result = validate_single_email("invalid-email", false, &cache).await;
-        
+
         assert!(!result.is_valid);
         assert!(result.error.is_some());
         assert_eq!(result.error.unwrap().code, "INVALID_SYNTAX");
@@ -144,7 +147,7 @@ mod email_route_tests {
     async fn test_validate_single_email_empty_string() {
         let cache = RedisCache::test_dummy();
         let result = validate_single_email("", false, &cache).await;
-        
+
         assert!(!result.is_valid);
         assert!(result.error.is_some());
         assert_eq!(result.error.unwrap().code, "INVALID_SYNTAX");
@@ -154,7 +157,7 @@ mod email_route_tests {
     async fn test_validate_single_email_whitespace_only() {
         let cache = RedisCache::test_dummy();
         let result = validate_single_email("   ", false, &cache).await;
-        
+
         assert!(!result.is_valid);
         assert!(result.error.is_some());
         assert_eq!(result.error.unwrap().code, "INVALID_SYNTAX");
@@ -208,9 +211,7 @@ mod email_route_tests {
 
     #[test]
     fn test_bulk_email_request_empty() {
-        let req = BulkEmailRequest {
-            emails: vec![],
-        };
+        let req = BulkEmailRequest { emails: vec![] };
         assert_eq!(req.emails.len(), 0);
     }
 
@@ -227,12 +228,12 @@ mod email_route_tests {
     fn test_email_validation_error_different_codes() {
         let codes = vec![
             "INVALID_SYNTAX",
-            "INVALID_DOMAIN", 
+            "INVALID_DOMAIN",
             "ROLE_BASED_EMAIL",
             "DISPOSABLE_EMAIL",
-            "DATABASE_ERROR"
+            "DATABASE_ERROR",
         ];
-        
+
         for code in codes {
             let error = EmailValidationError {
                 code: code.to_string(),

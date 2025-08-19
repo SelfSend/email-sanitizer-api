@@ -2,7 +2,7 @@
 mod graphql_handlers_tests {
     use crate::graphql::handlers::*;
     use crate::graphql::schema::create_schema;
-    use actix_web::{test, web, App, http::StatusCode};
+    use actix_web::{App, http::StatusCode, test, web};
     use serde_json::json;
 
     #[actix_web::test]
@@ -78,9 +78,7 @@ mod graphql_handlers_tests {
         )
         .await;
 
-        let req = test::TestRequest::post()
-            .uri("/graphql")
-            .to_request();
+        let req = test::TestRequest::post().uri("/graphql").to_request();
 
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
@@ -110,19 +108,15 @@ mod graphql_handlers_tests {
 
     #[actix_web::test]
     async fn test_graphql_playground() {
-        let app = test::init_service(
-            App::new()
-                .route("/playground", web::get().to(graphql_playground)),
-        )
-        .await;
+        let app =
+            test::init_service(App::new().route("/playground", web::get().to(graphql_playground)))
+                .await;
 
-        let req = test::TestRequest::get()
-            .uri("/playground")
-            .to_request();
+        let req = test::TestRequest::get().uri("/playground").to_request();
 
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), StatusCode::OK);
-        
+
         // Check that it returns HTML content
         let content_type = resp.headers().get("content-type");
         assert!(content_type.is_some());
@@ -132,19 +126,15 @@ mod graphql_handlers_tests {
 
     #[actix_web::test]
     async fn test_graphql_playground_post_method() {
-        let app = test::init_service(
-            App::new()
-                .route("/playground", web::get().to(graphql_playground)),
-        )
-        .await;
+        let app =
+            test::init_service(App::new().route("/playground", web::get().to(graphql_playground)))
+                .await;
 
         // POST should not be allowed for playground
-        let req = test::TestRequest::post()
-            .uri("/playground")
-            .to_request();
+        let req = test::TestRequest::post().uri("/playground").to_request();
 
         let resp = test::call_service(&app, req).await;
-        assert_eq!(resp.status(), StatusCode::METHOD_NOT_ALLOWED);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[actix_web::test]

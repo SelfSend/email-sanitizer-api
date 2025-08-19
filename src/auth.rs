@@ -46,7 +46,7 @@ pub fn generate_api_key(email: &str, password: &str) -> Result<String, Box<dyn s
         &claims,
         &EncodingKey::from_secret(jwt_secret.as_ref()),
     )?;
-    Ok(format!("{}.{}", input_hash[..16].to_string(), token))
+    Ok(format!("{}.{}", &input_hash[..16], token))
 }
 
 pub async fn verify_api_key(
@@ -168,7 +168,7 @@ mod tests {
         unsafe {
             std::env::set_var("JWT_SECRET", "test-secret-key-for-testing");
         }
-        
+
         let result = generate_api_key("test@example.com", "password123");
         // In test environment, this might fail due to missing dependencies
         // We just ensure the function can be called without panicking
@@ -178,7 +178,7 @@ mod tests {
     #[tokio::test]
     async fn test_verify_api_key_invalid_format() {
         let mongo_client = create_test_mongo_client().await;
-        
+
         let result = verify_api_key("invalid-key", &mongo_client).await;
         assert!(result.is_err());
     }
@@ -189,7 +189,7 @@ mod tests {
             std::env::remove_var("JWT_SECRET");
         }
         let mongo_client = create_test_mongo_client().await;
-        
+
         let result = verify_api_key("prefix.jwt-token", &mongo_client).await;
         assert!(result.is_err());
     }
@@ -198,19 +198,19 @@ mod tests {
     async fn test_auth_new() {
         let mongo_client = create_test_mongo_client().await;
         let auth = Auth::new(mongo_client.clone());
-        
+
         // Test that Auth struct is created successfully
         assert_eq!(std::ptr::eq(&auth.mongo_client, &mongo_client), false); // Different Arc instances
     }
 
     async fn create_test_mongo_client() -> MongoClient {
-        let mongo_uri = std::env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
-        let client_options = ClientOptions::parse(&mongo_uri).await.unwrap_or_else(|_| {
-            ClientOptions::default()
-        });
-        MongoClient::with_options(client_options).unwrap_or_else(|_| {
-            MongoClient::with_options(ClientOptions::default()).unwrap()
-        })
+        let mongo_uri = std::env::var("MONGODB_URI")
+            .unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
+        let client_options = ClientOptions::parse(&mongo_uri)
+            .await
+            .unwrap_or_else(|_| ClientOptions::default());
+        MongoClient::with_options(client_options)
+            .unwrap_or_else(|_| MongoClient::with_options(ClientOptions::default()).unwrap())
     }
 
     #[test]
@@ -219,7 +219,7 @@ mod tests {
             key: "test-key".to_string(),
             active: true,
         };
-        
+
         assert_eq!(api_key.key, "test-key");
         assert_eq!(api_key.active, true);
     }
@@ -231,7 +231,7 @@ mod tests {
             password_hash: "hashed-password".to_string(),
             active: true,
         };
-        
+
         assert_eq!(user.email, "test@example.com");
         assert_eq!(user.password_hash, "hashed-password");
         assert_eq!(user.active, true);
@@ -243,7 +243,7 @@ mod tests {
             email: "test@example.com".to_string(),
             exp: 1234567890,
         };
-        
+
         assert_eq!(claims.email, "test@example.com");
         assert_eq!(claims.exp, 1234567890);
     }

@@ -52,18 +52,18 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use actix_web::{test, App};
+    use actix_web::{App, test};
     use mongodb::{Client as MongoClient, options::ClientOptions};
     use serde_json::json;
 
     async fn create_test_mongo_client() -> MongoClient {
-        let mongo_uri = std::env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
-        let client_options = ClientOptions::parse(&mongo_uri).await.unwrap_or_else(|_| {
-            ClientOptions::default()
-        });
-        MongoClient::with_options(client_options).unwrap_or_else(|_| {
-            MongoClient::with_options(ClientOptions::default()).unwrap()
-        })
+        let mongo_uri = std::env::var("MONGODB_URI")
+            .unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
+        let client_options = ClientOptions::parse(&mongo_uri)
+            .await
+            .unwrap_or_else(|_| ClientOptions::default());
+        MongoClient::with_options(client_options)
+            .unwrap_or_else(|_| MongoClient::with_options(ClientOptions::default()).unwrap())
     }
 
     #[actix_web::test]
@@ -72,7 +72,7 @@ mod tests {
             std::env::set_var("JWT_SECRET", "test-secret-key-for-testing");
         }
         let mongo_client = create_test_mongo_client().await;
-        
+
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(mongo_client))
@@ -95,7 +95,7 @@ mod tests {
             std::env::set_var("JWT_SECRET", "test-secret-key-for-testing");
         }
         let mongo_client = create_test_mongo_client().await;
-        
+
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(mongo_client))
@@ -120,7 +120,7 @@ mod tests {
     #[actix_web::test]
     async fn test_configure_routes_function() {
         let mongo_client = create_test_mongo_client().await;
-        
+
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(mongo_client))
@@ -128,14 +128,10 @@ mod tests {
         )
         .await;
 
-        let req = test::TestRequest::post()
-            .uri("/register")
-            .to_request();
+        let req = test::TestRequest::post().uri("/register").to_request();
 
         let resp = test::call_service(&app, req).await;
         // Should not be 404 (not found), meaning route is configured
         assert_ne!(resp.status().as_u16(), 404);
     }
-
-
 }

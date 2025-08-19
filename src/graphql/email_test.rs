@@ -150,8 +150,10 @@ mod graphql_email_tests {
     #[tokio::test]
     async fn test_perform_validation_invalid_syntax() {
         let query = EmailQuery::default();
-        let result = query.perform_validation("invalid-email".to_string(), false).await;
-        
+        let result = query
+            .perform_validation("invalid-email".to_string(), false)
+            .await;
+
         assert!(result.is_ok());
         let response = result.unwrap();
         assert!(!response.is_valid);
@@ -163,7 +165,7 @@ mod graphql_email_tests {
     async fn test_perform_validation_empty_email() {
         let query = EmailQuery::default();
         let result = query.perform_validation("".to_string(), false).await;
-        
+
         assert!(result.is_ok());
         let response = result.unwrap();
         assert!(!response.is_valid);
@@ -175,7 +177,7 @@ mod graphql_email_tests {
     async fn test_perform_validation_whitespace_email() {
         let query = EmailQuery::default();
         let result = query.perform_validation("   ".to_string(), false).await;
-        
+
         assert!(result.is_ok());
         let response = result.unwrap();
         assert!(!response.is_valid);
@@ -194,7 +196,7 @@ mod graphql_email_tests {
 
         let json = serde_json::to_string(&cached).unwrap();
         let deserialized: CachedValidationResponse = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(cached.is_valid, deserialized.is_valid);
         assert_eq!(cached.status, deserialized.status);
         assert!(cached.error.is_none() && deserialized.error.is_none());
@@ -213,7 +215,7 @@ mod graphql_email_tests {
 
         let json = serde_json::to_string(&cached).unwrap();
         let deserialized: CachedValidationResponse = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(cached.is_valid, deserialized.is_valid);
         assert_eq!(cached.status, deserialized.status);
         assert!(cached.error.is_some() && deserialized.error.is_some());
@@ -229,10 +231,10 @@ mod graphql_email_tests {
         let error_codes = vec![
             "INVALID_SYNTAX",
             "INVALID_DOMAIN",
-            "ROLE_BASED_EMAIL", 
+            "ROLE_BASED_EMAIL",
             "DISPOSABLE_EMAIL",
             "DATABASE_ERROR",
-            "PROCESSING_ERROR"
+            "PROCESSING_ERROR",
         ];
 
         for code in error_codes {
@@ -279,11 +281,11 @@ mod graphql_email_tests {
         assert_eq!(response.results.len(), 2);
         assert_eq!(response.valid_count, 1);
         assert_eq!(response.invalid_count, 1);
-        
+
         // Check first result (valid)
         assert!(response.results[0].validation.is_valid);
         assert_eq!(response.results[0].email, "valid@example.com");
-        
+
         // Check second result (invalid)
         assert!(!response.results[1].validation.is_valid);
         assert_eq!(response.results[1].email, "invalid-email");

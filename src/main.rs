@@ -47,8 +47,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let job_queue = JobQueue::new(&redis_url).expect("Failed to initialize job queue");
 
     // Initialize MongoDB client
-    let mongodb_uri = std::env::var("MONGODB_URI")
-        .expect("MONGODB_URI environment variable is required");
+    let mongodb_uri =
+        std::env::var("MONGODB_URI").expect("MONGODB_URI environment variable is required");
     let mongo_client = MongoClient::with_uri_str(&mongodb_uri)
         .await
         .expect("Failed to initialize MongoDB client");

@@ -127,7 +127,10 @@ mod tests {
     #[tokio::test]
     async fn test_enqueue_bulk_validation() {
         if let Ok(job_queue) = JobQueue::new("redis://127.0.0.1:6379") {
-            let emails = vec!["test@example.com".to_string(), "user@example.org".to_string()];
+            let emails = vec![
+                "test@example.com".to_string(),
+                "user@example.org".to_string(),
+            ];
             let result = job_queue.enqueue_bulk_validation(emails, false).await;
             assert!(result.is_ok() || result.is_err());
         } else {
@@ -148,7 +151,9 @@ mod tests {
     #[tokio::test]
     async fn test_update_job_status() {
         if let Ok(job_queue) = JobQueue::new("redis://127.0.0.1:6379") {
-            let result = job_queue.update_job_status("test-job-id", JobStatus::Completed).await;
+            let result = job_queue
+                .update_job_status("test-job-id", JobStatus::Completed)
+                .await;
             assert!(result.is_ok() || result.is_err());
         } else {
             assert!(true);
@@ -174,10 +179,10 @@ mod tests {
             status: JobStatus::Pending,
             created_at: 1234567890,
         };
-        
+
         let serialized = serde_json::to_string(&job);
         assert!(serialized.is_ok());
-        
+
         let deserialized: Result<BulkValidationJob, _> = serde_json::from_str(&serialized.unwrap());
         assert!(deserialized.is_ok());
     }

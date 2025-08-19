@@ -1,4 +1,3 @@
-
 use crate::handlers::validation::{disposable, dnsmx, role_based, syntax};
 use crate::job_queue::JobQueue;
 use async_graphql::{Context, Object, Result, SimpleObject};

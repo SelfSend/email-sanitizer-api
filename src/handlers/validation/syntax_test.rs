@@ -10,7 +10,7 @@ mod additional_syntax_tests {
         assert!(is_valid_email("\"test@test\"@example.com"));
         assert!(is_valid_email("\"test\\\"test\"@example.com"));
         assert!(is_valid_email("\"test\\\\test\"@example.com"));
-        
+
         // Invalid quoted strings
         assert!(!is_valid_email("\"test@example.com"));
         assert!(!is_valid_email("test\"@example.com"));
@@ -24,12 +24,12 @@ mod additional_syntax_tests {
         assert!(is_valid_email("user@[127.0.0.1]"));
         assert!(is_valid_email("user@[0.0.0.0]"));
         assert!(is_valid_email("user@[255.255.255.255]"));
-        
+
         // Valid IPv6 addresses
         assert!(is_valid_email("user@[IPv6:::1]"));
         assert!(is_valid_email("user@[IPv6:fe80::1]"));
         assert!(is_valid_email("user@[IPv6:2001:db8:85a3::8a2e:370:7334]"));
-        
+
         // Invalid domain literals
         assert!(!is_valid_email("user@[300.0.0.1]"));
         assert!(!is_valid_email("user@[IPv6:invalid]"));
@@ -66,7 +66,7 @@ mod additional_syntax_tests {
         // Valid hyphen usage
         assert!(is_valid_email("user@sub-domain.example.com"));
         assert!(is_valid_email("user@a-b-c.example.com"));
-        
+
         // Invalid hyphen usage
         assert!(!is_valid_email("user@-subdomain.example.com"));
         assert!(!is_valid_email("user@subdomain-.example.com"));
@@ -79,15 +79,15 @@ mod additional_syntax_tests {
         let local_63 = "a".repeat(63);
         let local_64 = "a".repeat(64);
         let local_65 = "a".repeat(65);
-        
+
         assert!(is_valid_email(&format!("{}@example.com", local_63)));
         assert!(is_valid_email(&format!("{}@example.com", local_64)));
         assert!(!is_valid_email(&format!("{}@example.com", local_65)));
-        
+
         // Test domain label length (63 chars max)
         let label_63 = "b".repeat(63);
-        let label_64 = "b".repeat(64);
-        
+        let _label_64 = "b".repeat(64);
+
         assert!(is_valid_email(&format!("user@{}.com", label_63)));
         // Note: Some implementations may allow longer labels
     }
@@ -98,7 +98,7 @@ mod additional_syntax_tests {
         assert!(!is_valid_email("user@@example.com"));
         assert!(!is_valid_email("user@example@com"));
         assert!(!is_valid_email("@user@example.com"));
-        
+
         // @ inside quotes should be fine
         assert!(is_valid_email("\"user@domain\"@example.com"));
     }
@@ -129,7 +129,7 @@ mod additional_syntax_tests {
         assert!(!is_valid_email("user@example .com"));
         assert!(!is_valid_email(" user@example.com"));
         assert!(!is_valid_email("user@example.com "));
-        
+
         // Quoted whitespace should be valid
         assert!(is_valid_email("\"user name\"@example.com"));
         assert!(is_valid_email("\" user \"@example.com"));
@@ -174,11 +174,11 @@ mod additional_syntax_tests {
         let local = "a".repeat(64);
         let domain_part = format!("{}.{}.{}", "b".repeat(61), "c".repeat(61), "d".repeat(61));
         let email = format!("{}@{}", local, domain_part);
-        
+
         if email.len() == 254 {
             assert!(is_valid_email(&email));
         }
-        
+
         // Test 255 characters (should fail)
         let long_email = format!("{}@{}.extra", local, domain_part);
         if long_email.len() > 254 {

@@ -1,14 +1,13 @@
-
 use crate::handlers::validation::{disposable, dnsmx, role_based, syntax};
 use crate::job_queue::JobQueue;
 use actix_web::{HttpResponse, Responder, post, web};
 use futures::future::join_all;
+use mongodb::Client as MongoClient;
 use redis::{AsyncCommands, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use utoipa::ToSchema;
-use mongodb::Client as MongoClient;
 
 #[derive(Deserialize, ToSchema)]
 pub struct EmailRequest {
@@ -174,17 +173,22 @@ pub async fn validate_email(
     http_req: actix_web::HttpRequest,
 ) -> Result<impl Responder, actix_web::Error> {
     // Check API key
-    let auth_header = http_req.headers().get("Authorization")
+    let auth_header = http_req
+        .headers()
+        .get("Authorization")
         .and_then(|h| h.to_str().ok())
         .and_then(|s| s.strip_prefix("Bearer "))
         .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
 
     let db = mongo_client.database("email_sanitizer");
     let collection: mongodb::Collection<crate::auth::ApiKey> = db.collection("api_keys");
-    
-    match collection.find_one(mongodb::bson::doc! { "key": auth_header, "active": true }).await {
-        Ok(Some(_)) => {},
-        _ => return Err(actix_web::error::ErrorUnauthorized("Invalid API key"))
+
+    match collection
+        .find_one(mongodb::bson::doc! { "key": auth_header, "active": true })
+        .await
+    {
+        Ok(Some(_)) => {}
+        _ => return Err(actix_web::error::ErrorUnauthorized("Invalid API key")),
     }
     let email = req.email.trim();
 
@@ -413,17 +417,22 @@ pub async fn validate_emails_bulk(
     http_req: actix_web::HttpRequest,
 ) -> Result<impl Responder, actix_web::Error> {
     // Check API key
-    let auth_header = http_req.headers().get("Authorization")
+    let auth_header = http_req
+        .headers()
+        .get("Authorization")
         .and_then(|h| h.to_str().ok())
         .and_then(|s| s.strip_prefix("Bearer "))
         .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
 
     let db = mongo_client.database("email_sanitizer");
     let collection: mongodb::Collection<crate::auth::ApiKey> = db.collection("api_keys");
-    
-    match collection.find_one(mongodb::bson::doc! { "key": auth_header, "active": true }).await {
-        Ok(Some(_)) => {},
-        _ => return Err(actix_web::error::ErrorUnauthorized("Invalid API key"))
+
+    match collection
+        .find_one(mongodb::bson::doc! { "key": auth_header, "active": true })
+        .await
+    {
+        Ok(Some(_)) => {}
+        _ => return Err(actix_web::error::ErrorUnauthorized("Invalid API key")),
     }
     // For large batches (>10 emails), use job queue
     if req.emails.len() > 10 {
@@ -497,17 +506,22 @@ pub async fn get_job_status(
     http_req: actix_web::HttpRequest,
 ) -> Result<impl Responder, actix_web::Error> {
     // Check API key
-    let auth_header = http_req.headers().get("Authorization")
+    let auth_header = http_req
+        .headers()
+        .get("Authorization")
         .and_then(|h| h.to_str().ok())
         .and_then(|s| s.strip_prefix("Bearer "))
         .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
 
     let db = mongo_client.database("email_sanitizer");
     let collection: mongodb::Collection<crate::auth::ApiKey> = db.collection("api_keys");
-    
-    match collection.find_one(mongodb::bson::doc! { "key": auth_header, "active": true }).await {
-        Ok(Some(_)) => {},
-        _ => return Err(actix_web::error::ErrorUnauthorized("Invalid API key"))
+
+    match collection
+        .find_one(mongodb::bson::doc! { "key": auth_header, "active": true })
+        .await
+    {
+        Ok(Some(_)) => {}
+        _ => return Err(actix_web::error::ErrorUnauthorized("Invalid API key")),
     }
     let job_id = path.into_inner();
 
@@ -537,21 +551,21 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 mod tests {
     use super::*;
     use actix_web::{App, test};
+    use mongodb::{Client as MongoClient, options::ClientOptions};
     use serde_json::json;
     use std::env;
-    use mongodb::{Client as MongoClient, options::ClientOptions};
 
     // Mock MongoDB client for tests
     async fn create_test_mongo_client() -> MongoClient {
         // Try to connect to test MongoDB, fallback to dummy if not available
-        let mongo_uri = env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
-        
-        let client_options = ClientOptions::parse(&mongo_uri).await.unwrap_or_else(|_| {
-            ClientOptions::default()
-        });
-        MongoClient::with_options(client_options).unwrap_or_else(|_| {
-            MongoClient::with_options(ClientOptions::default()).unwrap()
-        })
+        let mongo_uri =
+            env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
+
+        let client_options = ClientOptions::parse(&mongo_uri)
+            .await
+            .unwrap_or_else(|_| ClientOptions::default());
+        MongoClient::with_options(client_options)
+            .unwrap_or_else(|_| MongoClient::with_options(ClientOptions::default()).unwrap())
     }
 
     // Helper function to create a test app with Redis cache and MongoDB
@@ -591,20 +605,25 @@ mod tests {
     }
 
     // Helper function to create test request with auth header
-    fn create_test_request_with_auth(method: &str, uri: &str, body: Option<serde_json::Value>) -> test::TestRequest {
+    fn create_test_request_with_auth(
+        method: &str,
+        uri: &str,
+        body: Option<serde_json::Value>,
+    ) -> test::TestRequest {
         let mut req = match method {
             "POST" => test::TestRequest::post(),
             "GET" => test::TestRequest::get(),
             _ => test::TestRequest::post(),
         };
-        
-        req = req.uri(uri)
+
+        req = req
+            .uri(uri)
             .insert_header(("Authorization", "Bearer test-api-key"));
-            
+
         if let Some(json_body) = body {
             req = req.set_json(json_body);
         }
-        
+
         req
     }
 
@@ -612,10 +631,11 @@ mod tests {
     async fn test_valid_email() {
         let app = create_test_app().await;
         let req = create_test_request_with_auth(
-            "POST", 
-            "/validate-email", 
-            Some(json!({ "email": "test@example.com" }))
-        ).to_request();
+            "POST",
+            "/validate-email",
+            Some(json!({ "email": "test@example.com" })),
+        )
+        .to_request();
 
         let resp = test::call_service(&app, req).await;
         // Expect 401 since we don't have a real API key in test DB
@@ -626,10 +646,11 @@ mod tests {
     async fn test_invalid_syntax() {
         let app = create_test_app().await;
         let req = create_test_request_with_auth(
-            "POST", 
-            "/validate-email", 
-            Some(json!({ "email": "invalid-email" }))
-        ).to_request();
+            "POST",
+            "/validate-email",
+            Some(json!({ "email": "invalid-email" })),
+        )
+        .to_request();
 
         let resp = test::call_service(&app, req).await;
         // Expect 401 since we don't have a real API key in test DB
@@ -640,10 +661,11 @@ mod tests {
     async fn test_invalid_domain() {
         let app = create_test_app().await;
         let req = create_test_request_with_auth(
-            "POST", 
-            "/validate-email", 
-            Some(json!({ "email": "test@nonexistent.invalid" }))
-        ).to_request();
+            "POST",
+            "/validate-email",
+            Some(json!({ "email": "test@nonexistent.invalid" })),
+        )
+        .to_request();
 
         let resp = test::call_service(&app, req).await;
         // Expect 401 since we don't have a real API key in test DB
@@ -657,10 +679,11 @@ mod tests {
 
         let app = create_test_app().await;
         let req = create_test_request_with_auth(
-            "POST", 
-            "/validate-email?check_role_based=true", 
-            Some(json!({ "email": "support@apple.com" }))
-        ).to_request();
+            "POST",
+            "/validate-email?check_role_based=true",
+            Some(json!({ "email": "support@apple.com" })),
+        )
+        .to_request();
 
         let resp = test::call_service(&app, req).await;
         // Expect 401 since we don't have a real API key in test DB
@@ -671,10 +694,11 @@ mod tests {
     async fn test_role_based_email_allowed_by_default() {
         let app = create_test_app().await;
         let req = create_test_request_with_auth(
-            "POST", 
-            "/validate-email", 
-            Some(json!({ "email": "admin@example.com" }))
-        ).to_request();
+            "POST",
+            "/validate-email",
+            Some(json!({ "email": "admin@example.com" })),
+        )
+        .to_request();
 
         let resp = test::call_service(&app, req).await;
         // Expect 401 since we don't have a real API key in test DB
@@ -685,10 +709,11 @@ mod tests {
     async fn test_disposable_email_detection() {
         let app = create_test_app().await;
         let req = create_test_request_with_auth(
-            "POST", 
-            "/validate-email", 
-            Some(json!({ "email": "user@mailinator.com" }))
-        ).to_request();
+            "POST",
+            "/validate-email",
+            Some(json!({ "email": "user@mailinator.com" })),
+        )
+        .to_request();
 
         let resp = test::call_service(&app, req).await;
         // Expect 401 since we don't have a real API key in test DB
@@ -704,10 +729,11 @@ mod tests {
 
         // First request - should trigger DNS lookup and cache the result
         let req1 = create_test_request_with_auth(
-            "POST", 
-            "/validate-email", 
-            Some(json!({ "email": "test@example.com" }))
-        ).to_request();
+            "POST",
+            "/validate-email",
+            Some(json!({ "email": "test@example.com" })),
+        )
+        .to_request();
 
         let resp1 = test::call_service(&app, req1).await;
         // Expect 401 since we don't have a real API key in test DB
@@ -715,10 +741,11 @@ mod tests {
 
         // Second request with same domain - should use cached result
         let req2 = create_test_request_with_auth(
-            "POST", 
-            "/validate-email", 
-            Some(json!({ "email": "different-user@example.com" }))
-        ).to_request();
+            "POST",
+            "/validate-email",
+            Some(json!({ "email": "different-user@example.com" })),
+        )
+        .to_request();
 
         let resp2 = test::call_service(&app, req2).await;
         // Expect 401 since we don't have a real API key in test DB
@@ -761,7 +788,10 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(RedisCache::test_dummy()))
-                .app_data(web::Data::new(JobQueue::new("redis://127.0.0.1:6379").unwrap_or_else(|_| JobQueue::new("redis://127.0.0.1:6379").unwrap())))
+                .app_data(web::Data::new(
+                    JobQueue::new("redis://127.0.0.1:6379")
+                        .unwrap_or_else(|_| JobQueue::new("redis://127.0.0.1:6379").unwrap()),
+                ))
                 .app_data(web::Data::new(mongo_client))
                 .configure(configure_routes),
         )
@@ -769,10 +799,11 @@ mod tests {
 
         // Test that the routes are configured by making a request
         let req = create_test_request_with_auth(
-            "POST", 
-            "/validate-email", 
-            Some(json!({ "email": "test@example.com" }))
-        ).to_request();
+            "POST",
+            "/validate-email",
+            Some(json!({ "email": "test@example.com" })),
+        )
+        .to_request();
 
         let resp = test::call_service(&app, req).await;
         // Should not be 404 (not found), meaning route is configured
@@ -784,12 +815,13 @@ mod tests {
     async fn test_validate_emails_bulk_success() {
         let app = create_test_app().await;
         let req = create_test_request_with_auth(
-            "POST", 
-            "/validate-emails-bulk", 
+            "POST",
+            "/validate-emails-bulk",
             Some(json!({
                 "emails": ["test@example.com", "user@example.org"]
-            }))
-        ).to_request();
+            })),
+        )
+        .to_request();
 
         let resp = test::call_service(&app, req).await;
         // Expect 401 since we don't have a real API key in test DB
@@ -800,12 +832,13 @@ mod tests {
     async fn test_validate_emails_bulk_mixed_results() {
         let app = create_test_app().await;
         let req = create_test_request_with_auth(
-            "POST", 
-            "/validate-emails-bulk", 
+            "POST",
+            "/validate-emails-bulk",
             Some(json!({
                 "emails": ["valid@example.com", "invalid-email", "user@nonexistent.invalid"]
-            }))
-        ).to_request();
+            })),
+        )
+        .to_request();
 
         let resp = test::call_service(&app, req).await;
         // Expect 401 since we don't have a real API key in test DB
@@ -816,12 +849,13 @@ mod tests {
     async fn test_validate_emails_bulk_with_role_based_check() {
         let app = create_test_app().await;
         let req = create_test_request_with_auth(
-            "POST", 
-            "/validate-emails-bulk?check_role_based=true", 
+            "POST",
+            "/validate-emails-bulk?check_role_based=true",
             Some(json!({
                 "emails": ["user@example.com", "admin@example.com"]
-            }))
-        ).to_request();
+            })),
+        )
+        .to_request();
 
         let resp = test::call_service(&app, req).await;
         // Expect 401 since we don't have a real API key in test DB
@@ -832,10 +866,11 @@ mod tests {
     async fn test_validate_emails_bulk_empty_array() {
         let app = create_test_app().await;
         let req = create_test_request_with_auth(
-            "POST", 
-            "/validate-emails-bulk", 
-            Some(json!({ "emails": [] }))
-        ).to_request();
+            "POST",
+            "/validate-emails-bulk",
+            Some(json!({ "emails": [] })),
+        )
+        .to_request();
 
         let resp = test::call_service(&app, req).await;
         // Expect 401 since we don't have a real API key in test DB
@@ -846,12 +881,13 @@ mod tests {
     async fn test_validate_emails_bulk_disposable_emails() {
         let app = create_test_app().await;
         let req = create_test_request_with_auth(
-            "POST", 
-            "/validate-emails-bulk", 
+            "POST",
+            "/validate-emails-bulk",
             Some(json!({
                 "emails": ["user@mailinator.com", "test@example.com"]
-            }))
-        ).to_request();
+            })),
+        )
+        .to_request();
 
         let resp = test::call_service(&app, req).await;
         // Expect 401 since we don't have a real API key in test DB
