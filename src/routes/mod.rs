@@ -4,6 +4,15 @@ pub mod email;
 pub mod graphql;
 pub mod health;
 
+#[cfg(test)]
+mod email_test;
+
+#[cfg(test)]
+mod auth_test;
+
+#[cfg(test)]
+mod email_edge_case_tests;
+
 /// Central API Route Configuration
 ///
 /// Configures versioned API endpoints under the `/api/v1` namespace with:
@@ -115,61 +124,63 @@ mod tests {
     /// Test email validation endpoints
     #[actix_web::test]
     async fn test_email_validation_endpoints() -> Result<(), Error> {
+        use mongodb::{Client as MongoClient, options::ClientOptions};
+        use crate::job_queue::JobQueue;
+        
+        // Create MongoDB client for tests
+        let mongo_uri = std::env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
+        let client_options = ClientOptions::parse(&mongo_uri).await.unwrap_or_else(|_| {
+            // Use a simple default configuration if parsing fails
+            ClientOptions::default()
+        });
+        let mongo_client = MongoClient::with_options(client_options).unwrap_or_else(|_| {
+            // Create a simple client with default options if connection fails
+            MongoClient::with_options(ClientOptions::default()).unwrap()
+        });
+        
+        // Create JobQueue for tests
+        let job_queue = JobQueue::new("redis://127.0.0.1:6379").unwrap_or_else(|_| {
+            JobQueue::new("redis://127.0.0.1:6379").unwrap()
+        });
+        
         let app = test::init_service(
             App::new()
                 .app_data(Data::new(create_test_redis_cache()))
+                .app_data(Data::new(mongo_client))
+                .app_data(Data::new(job_queue))
                 .configure(configure),
         )
         .await;
 
-        // Test valid email validation request
-        let valid_req = test::TestRequest::post()
+        // Test email validation without auth header - should return 401
+        let no_auth_req = test::TestRequest::post()
             .uri("/api/v1/validate-email")
             .set_json(json!({ "email": "test@example.com" }))
             .to_request();
-        let valid_resp = app.call(valid_req).await?;
-        let status = valid_resp.status();
+        let no_auth_resp = app.call(no_auth_req).await?;
+        assert_eq!(no_auth_resp.status(), StatusCode::UNAUTHORIZED);
 
-        // This should be success in most cases, but might depend on DNS
-        // Postponing dns-mocking or conditionally testing for later
-        if !status.is_success() {
-            let body = to_bytes(valid_resp.into_body()).await?;
-            let error_response: serde_json::Value = serde_json::from_slice(&body)?;
-            eprintln!(
-                "Note: Email validation failed in test environment: {:?}",
-                error_response
-            );
-
-            // Only assert success if we're not dealing with DNS/connectivity issues
-            if error_response["error"] != "INVALID_DOMAIN" {
-                assert!(
-                    status.is_success(),
-                    "Email validation failed with non-DNS error: {:?}",
-                    error_response
-                );
-            }
-        } else {
-            assert!(status.is_success());
-        }
-
-        // Test invalid email syntax
-        let invalid_syntax_req = test::TestRequest::post()
+        // Test email validation with invalid auth header - should return 401
+        let invalid_auth_req = test::TestRequest::post()
             .uri("/api/v1/validate-email")
-            .set_json(json!({ "email": "invalid-email" }))
+            .insert_header(("Authorization", "Bearer invalid-key"))
+            .set_json(json!({ "email": "test@example.com" }))
             .to_request();
-        let invalid_syntax_resp = app.call(invalid_syntax_req).await?;
-        assert_eq!(invalid_syntax_resp.status(), StatusCode::BAD_REQUEST);
+        let invalid_auth_resp = app.call(invalid_auth_req).await?;
+        assert_eq!(invalid_auth_resp.status(), StatusCode::UNAUTHORIZED);
 
-        // Test missing request body
+        // Test missing request body with auth
         let empty_body_req = test::TestRequest::post()
             .uri("/api/v1/validate-email")
+            .insert_header(("Authorization", "Bearer test-key"))
             .to_request();
         let empty_body_resp = app.call(empty_body_req).await?;
         assert_eq!(empty_body_resp.status(), StatusCode::BAD_REQUEST);
 
-        // Test malformed JSON body
+        // Test malformed JSON body with auth
         let malformed_req = test::TestRequest::post()
             .uri("/api/v1/validate-email")
+            .insert_header(("Authorization", "Bearer test-key"))
             .insert_header((header::CONTENT_TYPE, "application/json"))
             .set_payload("{invalid_json:}") // Deliberately malformed
             .to_request();

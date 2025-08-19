@@ -15,7 +15,7 @@ use std::sync::Arc;
 /// - `ROLE_BASED_EMAIL`: The email uses a role-based local part (when enabled)
 /// - `DISPOSABLE_EMAIL`: The email comes from a disposable email provider
 /// - `DATABASE_ERROR`: Could not check disposable email database
-#[derive(SimpleObject, Clone, Serialize, Deserialize)]
+#[derive(SimpleObject, Clone, Serialize, Deserialize, Debug)]
 pub struct EmailValidationError {
     /// Error code: INVALID_SYNTAX, INVALID_DOMAIN, ROLE_BASED_EMAIL, DISPOSABLE_EMAIL, or DATABASE_ERROR
     pub code: String,
@@ -56,10 +56,10 @@ pub struct BulkEmailValidationResponse {
 
 /// Serializable version of the validation response
 #[derive(Serialize, Deserialize)]
-struct CachedValidationResponse {
-    is_valid: bool,
-    status: Option<String>,
-    error: Option<EmailValidationError>,
+pub struct CachedValidationResponse {
+    pub is_valid: bool,
+    pub status: Option<String>,
+    pub error: Option<EmailValidationError>,
 }
 
 impl From<CachedValidationResponse> for EmailValidationResponse {
@@ -85,8 +85,8 @@ impl From<EmailValidationResponse> for CachedValidationResponse {
 /// Email validation query operations
 #[derive(Default)]
 pub struct EmailQuery {
-    redis_client: Option<Arc<Client>>,
-    cache_ttl: u64,
+    pub redis_client: Option<Arc<Client>>,
+    pub cache_ttl: u64,
 }
 
 impl EmailQuery {
@@ -98,7 +98,7 @@ impl EmailQuery {
         })
     }
 
-    async fn get_cached_result(&self, email: &str) -> Option<EmailValidationResponse> {
+    pub async fn get_cached_result(&self, email: &str) -> Option<EmailValidationResponse> {
         if let Some(client) = &self.redis_client {
             let mut conn = client.get_connection().ok()?;
             let cache_key = format!("email:validation:{}", email);
@@ -115,7 +115,7 @@ impl EmailQuery {
         None
     }
 
-    async fn cache_result(&self, email: &str, result: &EmailValidationResponse) {
+    pub async fn cache_result(&self, email: &str, result: &EmailValidationResponse) {
         if let Some(client) = &self.redis_client
             && let Ok(mut conn) = client.get_connection()
         {
@@ -264,7 +264,7 @@ impl EmailQuery {
 
 // Move the validation logic to a separate method outside the Object impl
 impl EmailQuery {
-    async fn perform_validation(
+    pub async fn perform_validation(
         &self,
         email: String,
         check_role_based: bool,

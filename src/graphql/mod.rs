@@ -4,6 +4,12 @@ pub mod health;
 pub mod schema;
 
 #[cfg(test)]
+mod email_test;
+
+#[cfg(test)]
+mod handlers_test;
+
+#[cfg(test)]
 mod tests {
     #[test]
     fn test_graphql_modules_exist() {

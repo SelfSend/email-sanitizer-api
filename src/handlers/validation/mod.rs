@@ -99,6 +99,12 @@ pub mod disposable;
 pub mod role_based;
 
 #[cfg(test)]
+mod syntax_test;
+
+#[cfg(test)]
+mod dnsmx_test;
+
+#[cfg(test)]
 mod tests {
     #[test]
     fn test_validation_modules_exist() {
